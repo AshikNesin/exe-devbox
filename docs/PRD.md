@@ -450,7 +450,8 @@ suggest link so the user can apply it in one click.
   nginx server block write + reload. Multi-domain + loopback backends.
   (shipped; live for `devbox.nesin.io` + `devbox.ashiknesin.com` → Shelley)
 - ⏳ **M4 — Cloudflare API path:** token-based CNAME apply; DC URL documented.
-- ☐ **M5 — Polish:** `status`, `nginx` subcmds, `doctor` table, docs, `make install`.
+- ⏳ **M5 — Polish:** ✅ `status` (live HTTP probe per domain) shipped; `nginx` subcmds,
+  `doctor` table, docs remaining.
 
 ---
 
