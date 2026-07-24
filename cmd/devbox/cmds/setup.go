@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -226,9 +225,10 @@ func ensureNginxPortFree(port int, assumeYes bool) error {
 	return nil
 }
 
-// portOwner returns the process name listening on port, or "".
+// portOwner returns the process name listening on port, or "". Needs root to
+// see other users' process names via ss, so we run it through sudo.
 func portOwner(port int) string {
-	out, err := exec.Command("ss", "-tlnp").CombinedOutput()
+	out, err := system.AsRoot("ss", "-tlnp").CombinedOutput()
 	if err != nil {
 		return ""
 	}
@@ -240,9 +240,11 @@ func portOwner(port int) string {
 		if i := strings.Index(line, "users:(("); i >= 0 {
 			rest := line[i+len("users:((") :]
 			if comma := strings.IndexByte(rest, ','); comma > 0 {
-				return rest[:comma]
+				name := strings.Trim(rest[:comma], `"`)
+				return name
 			}
 		}
+		return "unknown"
 	}
 	return ""
 }
@@ -297,8 +299,11 @@ func cond(b bool, t, f string) string {
 }
 
 func confirm(prompt string) bool {
+	if gflags.Yes {
+		return true // --yes skips prompts
+	}
 	if output.Global.JSON {
-		return false // never auto-confirm in JSON mode
+		return false // never auto-confirm in JSON mode without --yes
 	}
 	fmt.Fprintf(output.Global.ErrW, "%s [y/N]: ", prompt)
 	var resp string

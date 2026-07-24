@@ -82,10 +82,12 @@ func InstallNode(ctx context.Context, force bool) (string, error) {
 	return InstalledNode(), nil
 }
 
-// InstallPortless runs `npm i -g portless`. Assumes node/npm are installed.
+// InstallPortless runs `npm i -g portless`. Needs root because the NodeSource
+// node packages install globals into /usr/lib/node_modules (not user-writable).
+// Assumes node/npm are installed.
 func InstallPortless(ctx context.Context) error {
-	out, err := exec.Command("npm", "i", "-g", "portless").CombinedOutput()
-	if err != nil {
+	cmd := system.AsRoot("npm", "i", "-g", "portless")
+	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("npm i -g portless: %w: %s", err, out)
 	}
 	return nil

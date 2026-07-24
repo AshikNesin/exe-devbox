@@ -12,9 +12,11 @@ package nginx
 
 import (
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/ashiknesin/exe-devbox/internal/system"
 )
 
 // BaseConf renders 00-devbox-base.conf: the WS upgrade map and a catch-all
@@ -99,17 +101,30 @@ func IncludeShim(confDir string) string {
 		filepath.Join(confDir, "*.conf"))
 }
 
-// Test runs `nginx -t` (config syntax + include validation). Returns combined output.
+// Test runs `nginx -t` (config syntax + include validation). Run as root so
+// it can verify the pid/paths in nginx.conf (non-root `nginx -t` fails on
+// /run/nginx.pid permission even when config is valid).
 func Test() ([]byte, error) {
-	return exec.Command("nginx", "-t").CombinedOutput()
+	return system.AsRoot("nginx", "-t").CombinedOutput()
 }
 
 // Reload validates then reloads nginx. Returns validation output + reload error.
+// We retry the reload a couple times because `systemctl reload` can return just
+// before workers finish loading the new config, causing a brief stale-routing
+// window that surprises tests run immediately after.
 func Reload() ([]byte, error) {
 	out, err := Test()
 	if err != nil {
 		return out, fmt.Errorf("nginx -t failed: %w", err)
 	}
-	reloadErr := exec.Command("systemctl", "reload", "nginx").Run()
+	var reloadErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		reloadErr = system.AsRoot("systemctl", "reload", "nginx").Run()
+		if reloadErr == nil {
+			time.Sleep(200 * time.Millisecond) // let workers settle
+			return out, nil
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
 	return out, reloadErr
 }
