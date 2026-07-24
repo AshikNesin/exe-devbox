@@ -1,6 +1,6 @@
 # PRD — `exe-devbox`
 
-> A Go CLI that automates the "multi-project dev behind Caddy + portless on an
+> A Go CLI that automates the "multi-project dev behind nginx + portless on an
 > exe.dev VM" workflow documented in
 > `~/Learn/multi-project-caddy-portless-exedev.md`.
 >
@@ -11,17 +11,17 @@
 ## 1. Problem
 
 The manual setup in the reference doc is long and error-prone: install Node
-LTS + portless + Caddy, install one shared portless daemon on `:8888`, write a
-Host-rewriting Caddyfile on `:8080`, point exe.dev's main proxy at Caddy,
-figure out the VM name/port, and — for every project — add a public subdomain
-that needs (a) a DNS CNAME to `<vm>.exe.xyz` and (b) an exe.dev domain
-registration. Doing this by hand for each new project is the friction we're
-removing.
+LTS + portless + nginx, install one shared portless daemon on `:8888`, write a
+Host-rewriting reverse-proxy config on `:8080`, point exe.dev's main proxy at
+nginx, figure out the VM name/port, and — for every project — add a public
+subdomain that needs (a) a DNS CNAME to `<vm>.exe.xyz` and (b) an exe.dev
+domain registration. Doing this by hand for each new project is the friction
+we're removing.
 
 `exe-devbox` (binary name **`devbox`**) automates two things:
 
-1. **One-time VM bring-up** (`devbox setup`) — install deps, manage Caddy
-   config at `~/.exe-devbox/caddy`, and discover the VM's identity.
+1. **One-time VM bring-up** (`devbox setup`) — install deps, manage nginx
+   config at `~/.exe-devbox/nginx`, and discover the VM's identity.
 2. **Per-project domain onboarding** (`devbox new --domain …`) — figure out the
    DNS provider of the target domain, give the user the easiest possible path
    to add the CNAME (Domain Connect if supported, else manual instructions),
@@ -33,8 +33,8 @@ removing.
 
 ### Goals
 - **G1.** `devbox setup` gets a fresh VM from zero to a working
-  Caddy-on-`:8080` + portless-on-`:8888` reverse-proxy stack, idempotent and
-  re-runnable, with Caddy config managed under `~/.exe-devbox/caddy`.
+  nginx-on-`:8080` + portless-on-`:8888` reverse-proxy stack, idempotent and
+  re-runnable, with nginx config managed under `~/.exe-devbox/nginx`.
 - **G2.** `devbox setup` auto-discovers the VM's **name** and **default port**
   from the exe.dev reflection endpoint (`reflection.int.exe.xyz`) — no flags
   required for the common case.
@@ -46,7 +46,7 @@ removing.
     record values.
 - **G4.** Every `devbox new` run ends by emitting the **exe.dev suggest link**
   to register the domain for this VM (and the share-port link if the VM's
-  default port isn't already pointing at Caddy).
+  default port isn't already pointing at nginx).
 - **G5.** Distinguish **on-VM automation** (can run directly) from **owner-only
   exe.dev commands** (need the owner's SSH key → surfaced as
   `https://exe.dev/suggest?command=…` click-to-run links).
@@ -55,7 +55,7 @@ removing.
 - Managing project dev servers themselves (`pnpm run dev`, HMR wiring). That
   stays in each project's launcher / the reference doc's `~/bin/devbox-start`.
   v1 may *document* it but not own it.
-- TLS/cert automation — exe.dev terminates TLS; Caddy is a plain HTTP hop.
+- TLS/cert automation — exe.dev terminates TLS; nginx is a plain HTTP hop.
 - A TUI/dashboard. Plain CLI output with color + copy-paste blocks.
 - Windows/macOS as first-class targets (exe.dev VMs are Ubuntu). Linux only v1.
 
@@ -76,6 +76,17 @@ removing.
 > target. That hostname does **not** resolve. The correct target is
 > `nesins-devbox.exe.xyz`. The CLI will always use `<vm>.exe.xyz`.
 
+### Why nginx (not Caddy)
+
+The reference doc used Caddy, but exe.dev terminates TLS so Caddy's one big
+feature (automatic HTTPS) is turned off (`auto_https off`). What's left is
+plain HTTP reverse-proxying + a `Host` header rewrite — nginx does this
+natively with zero ceremony, and unlike Caddy-with-`admin off`, **`nginx -t &&
+systemctl reload nginx` just works** (no restart-only quirk). nginx is also
+preinstalled on the VM (`/usr/bin/nginx`) and ubiquitous. We keep **portless**
+as the per-project route layer so existing `portless run` dev scripts are
+untouched.
+
 ### Domain Connect reality check
 
 - Domain Connect (DC) is an open standard. A host "supports DC" iff its apex
@@ -94,13 +105,13 @@ removing.
 
 ---
 
-## 4. Architecture recap (from reference doc)
+## 4. Architecture recap
 
 ```
 https://<project>.<your-domain>          (browser)
    │  TLS by exe.dev edge
    ▼
-exe.dev edge ──HTTP──► VM:Caddy (:8080)
+exe.dev edge ──HTTP──► VM:nginx (:8080)
                             │  rewrite Host: <name>.localhost
                             ▼
                         VM:portless (:8888, one shared daemon)
@@ -110,24 +121,23 @@ exe.dev edge ──HTTP──► VM:Caddy (:8080)
 ```
 
 - One **shared portless** daemon on `:8888` (HTTP, no TLS), systemd-managed.
-- **Caddy** on `:8080` rewrites `Host` from the public name to
+- **nginx** on `:8080` rewrites `Host` from the public name to
   `<project>.localhost` so portless can route.
-- exe.dev's single main proxy port points at Caddy (`8080`). All custom
-  domains ride that one port → must all go through Caddy.
+- exe.dev's single main proxy port points at nginx (`8080`). All custom
+  domains ride that one port → must all go through nginx.
 
 `devbox setup` produces exactly this. `devbox new` adds the public-name
-entries (DNS + exe.dev registration) and the Caddy `@<project> handle {…}`
-block for a project.
+entries (DNS + exe.dev registration) and the nginx server block for a project.
 
 ---
 
 ## 5. CLI surface
 
 ```
-devbox setup [--vm <name>] [--port <n>] [--caddy-port 8080] [--portless-port 8888]
+devbox setup [--vm <name>] [--port <n>] [--nginx-port 8080] [--portless-port 8888]
 devbox new --domain <fqdn> [--project <name>] [--to <backend>] [--public]
 devbox status
-devbox caddy (reload | edit | show)
+devbox nginx (reload | edit | show)
 devbox doctor
 ```
 
@@ -152,8 +162,8 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
      newer. Resolve "latest LTS" from
      `https://nodejs.org/dist/index.json` (filter `lts` field).
    - **portless** (`portless.sh`) — `npm i -g portless` using the node above.
-   - **Caddy** — official apt repo (`apt-get install -y caddy`). Reuse if
-     `/usr/bin/caddy` exists.
+   - **nginx** — `apt-get install -y nginx`. Reuse if `/usr/bin/nginx`
+     exists (it is already present on this VM).
    - Requires sudo; prompt via `sudo` unless running as root or `--yes`.
 
 3. **Install the shared portless daemon on `:8888`** (HTTP, no TLS):
@@ -163,51 +173,57 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
    - Append `export PORTLESS_PORT=8888 PORTLESS_HTTPS=0` to `~/.bashrc` if
      absent (idempotent marker).
 
-4. **Manage Caddy config at `~/.exe-devbox/caddy`** (the user's requested
-   location):
-   - Authoritative Caddyfile: `~/.exe-devbox/caddy/Caddyfile`.
-   - Symlink it to `/etc/caddy/Caddyfile` (so the system service picks it up),
-     or generate `/etc/caddy/Caddyfile` from it on each reload. **Decision:
-     symlink** — single source of truth, survives package upgrades.
-   - Seed a minimal Caddyfile with global `auto_https off` + `admin off`
-     (Caddy is a plain HTTP hop; exe.dev did TLS) and a catch-all `404`.
-   - The `Caddyfile` is **generated/edited by the CLI**; hand-edits are
-     preserved in an `import ~/.exe-devbox/caddy/*.local.caddy` glob.
-   - Use `systemctl restart caddy` (NOT `reload` — `admin off` disables the
-     control endpoint).
+4. **Manage nginx config at `~/.exe-devbox/nginx`** (the user's requested
+   location) via a one-time **include shim**:
+   - Write `/etc/nginx/conf.d/devbox.conf` (sudo, once) containing a single
+     resolved include:
+     `include /home/<user>/.exe-devbox/nginx/conf.d/*.conf;`
+     (home expanded at write time — nginx doesn't expand `~`).
+   - All subsequent per-project server blocks live in
+     `~/.exe-devbox/nginx/conf.d/<project>.conf` — **no sudo needed to add or
+     edit** them.
+   - Seed a base file `~/.exe-devbox/nginx/conf.d/00-devbox-base.conf` with:
+     - a `map $http_upgrade $connection_upgrade` block (for WS/HMR upgrades),
+     - a catch-all `server { listen <nginx-port> default_server; return 404; }`.
+   - Each per-project server block `listen`s on `<nginx-port>` and uses
+     `server_name <domain>`. Multiple domains → one block via space-separated
+     `server_name`.
+   - Reload semantics: `nginx -t && systemctl reload nginx` — **reload works**
+     (no restart-only quirk like Caddy's `admin off`).
 
-5. **Write a caddy-reload helper** `~/.exe-devbox/bin/devbox-caddy-reload`
-  (`caddy validate` then `systemctl restart caddy`) and add `~/.exe-devbox/bin`
+5. **Write an nginx-reload helper** `~/.exe-devbox/bin/devbox-nginx-reload`
+  (`nginx -t` then `systemctl reload nginx`) and add `~/.exe-devbox/bin`
   to PATH in `~/.bashrc` (idempotent).
 
-6. **Point exe.dev at Caddy** — if `default_port != <caddy-port>`: emit the
+6. **Point exe.dev at nginx** — if `default_port != <nginx-port>`: emit the
    owner-only suggest link:
-   `https://exe.dev/suggest?command=ssh%20exe.dev%20share%20port%20<vm>%20<caddy-port>`
+   `https://exe.dev/suggest?command=ssh%20exe.dev%20share%20port%20<vm>%20<nginx-port>`
    (can't run it — needs owner key).
 
-7. **`devbox doctor` checks** at the end: node/npm/portless/caddy on PATH;
-   `systemctl is-active caddy portless`; ports `:8080`/`:8888` listening;
-   reflection port == caddy port; print a ✅/❌ table.
+7. **`devbox doctor` checks** at the end: node/npm/portless/nginx on PATH;
+   `systemctl is-active nginx portless`; ports `:8080`/`:8888` listening;
+   reflection port == nginx port; print a ✅/❌ table.
 
 ### 6.2 `~/.exe-devbox` layout
 
 ```
 ~/.exe-devbox/
 ├── config.json            # vm name, ports, cname target, dep versions
-├── caddy/
-│   ├── Caddyfile          # CLI-managed (source of truth)
-│   └── *.local.caddy      # user hand-edits (imported by Caddyfile)
+├── nginx/
+│   └── conf.d/
+│       ├── 00-devbox-base.conf   # CLI-managed base (WS map + catch-all)
+│       └── <project>.conf        # one per project, user-editable
 ├── bin/
-│   └── devbox-caddy-reload
+│   └── devbox-nginx-reload
 └── state/                 # logs, last-run, ids of added domains
 ```
 
 ### 6.3 Idempotency & re-runnability
 
 - `setup` is fully idempotent: installing an already-present dep is a no-op;
-  the Caddyfile is regenerated deterministically; systemd units are
-  re-enabled not duplicated. This is a hard requirement — the user will run it
-  repeatedly.
+  the base conf is regenerated deterministically; the include shim is written
+  once (re-written identically if present); systemd units are re-enabled not
+  duplicated. This is a hard requirement — the user will run it repeatedly.
 
 ---
 
@@ -224,11 +240,12 @@ devbox new --domain new-app.devbox.nesin.io \
 
 - `--domain` (required): the public FQDN to serve.
 - `--project` (default: first label of `--domain`, e.g. `new-app`): the
-  portless route name → `<project>.localhost`, and the Caddy matcher name.
+  portless route name → `<project>.localhost`, and the nginx server-name /
+  conf filename.
 - `--to`: target backend. `portless` (default) writes the
-  `header_up Host <project>.localhost` block; `loopback:<port>` writes a
-  direct `reverse_proxy 127.0.0.1:<port>` (for non-portless services like
-  Shelley on `:9999`).
+  `proxy_set_header Host <project>.localhost` block; `loopback:<port>` writes
+  a direct `proxy_pass http://127.0.0.1:<port>` (for non-portless services
+  like Shelley on `:9999`).
 
 ### 7.2 What it does (in order)
 
@@ -280,21 +297,35 @@ The CNAME to add is always:
   `https://exe.dev/suggest?command=ssh%20exe.dev%20share%20set-public%20<vm>`
 - These cannot be run by the CLI (owner SSH key) — they're click-to-run links.
 
-**Step E — Add the Caddy route (on-VM, automated).**
-- Append/merge a block into `~/.exe-devbox/caddy/Caddyfile`:
-  ```caddy
-  @<project> host <domain>
-  handle @<project> {
-      reverse_proxy 127.0.0.1:8888 {
-          header_up Host <project>.localhost
+**Step E — Add the nginx route (on-VM, automated).**
+- Write `~/.exe-devbox/nginx/conf.d/<project>.conf`:
+  ```nginx
+  # managed by devbox — project: new-app
+  server {
+      listen 8080;
+      server_name new-app.devbox.nesin.io;
+
+      location / {
+          proxy_pass http://127.0.0.1:8888;
+          proxy_set_header Host new-app.localhost;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+
+          # WebSocket / Vite HMR upgrade
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection $connection_upgrade;
+          proxy_read_timeout 86400;
       }
   }
   ```
-  (or `reverse_proxy 127.0.0.1:<port>` for `--to loopback:<port>`.)
-- `caddy validate` + `systemctl restart caddy`.
+  For `--to loopback:<port>`: `proxy_pass http://127.0.0.1:<port>;` and
+  `proxy_set_header Host $host;` instead of the `.localhost` rewrite.
+- `nginx -t && systemctl reload nginx`.
 - Record the domain + project in `~/.exe-devbox/state/domains.json`.
 - Print the local sanity command:
-  `curl -s -H "Host: <domain>" http://127.0.0.1:<caddy-port>/ | head`.
+  `curl -s -H "Host: <domain>" http://127.0.0.1:<nginx-port>/ | head`.
 
 **Step F — (optional) HMR hint.** If `--to portless`, print the env var to set
 in the project launcher so Vite HMR works through the proxy (ref doc §4):
@@ -318,11 +349,12 @@ https://<dcApiUrl>/v2/<apex>/settings/<providerId>/<serviceId>/apply
 
 ## 8. Supporting commands
 
-- **`devbox status`** — VM name, reflection port vs Caddy port, portless
+- **`devbox status`** — VM name, reflection port vs nginx port, portless
   routes (`portless list`), registered domains from `state/domains.json`,
   systemd unit states.
-- **`devbox caddy show | edit | reload`** — `edit` opens
-  `~/.exe-devbox/caddy/Caddyfile`; `reload` = validate + restart.
+- **`devbox nginx show | edit | reload`** — `show` prints
+  `~/.exe-devbox/nginx/conf.d/*`; `edit` opens `<project>.conf`; `reload` =
+  `nginx -t` + `systemctl reload nginx`.
 - **`devbox doctor`** — the health-check table (also runs at end of `setup`).
 
 ---
@@ -331,7 +363,7 @@ https://<dcApiUrl>/v2/<apex>/settings/<providerId>/<serviceId>/apply
 
 | Action | Who | Mechanism |
 |---|---|---|
-| Install deps, systemd, Caddy, portless | CLI | sudo on the VM |
+| Install deps, systemd, nginx, portless | CLI | sudo on the VM |
 | Add DNS record (Cloudflare API) | CLI | user's `CLOUDFLARE_API_TOKEN` |
 | `ssh exe.dev domain add` | **owner** | suggest link |
 | `ssh exe.dev share port` | **owner** | suggest link |
@@ -367,7 +399,8 @@ suggest link so the user can apply it in one click.
 | R4 | Should `devbox new` also write project launchers / HMR env? | v1: print only. v2: opt-in `--wire`. |
 | R5 | exe.dev suggest-link command encoding — confirm exact `ssh exe.dev …` syntax (`domain add <vm> <domain>` order, `share port <vm> <n>`). | Confirm against `exe.dev/docs.md` before shipping. |
 | R6 | Public-suffix list staleness for apex detection. | Bundle `x/net/publicsuffix` (compiled-in DAT); accept `--apex` override. |
-| R7 | Caddyfile merging on repeated `devbox new`. | Maintain sections delimited by `# BEGIN devbox:<project>` / `# END` markers; replace in place. |
+| R7 | Re-running `devbox new` for an existing project. | Per-project `<project>.conf` is rewritten wholesale (deterministic); base `00-devbox-base.conf` regenerated. State file updated, not duplicated. |
+| R8 | `/etc/nginx/conf.d/devbox.conf` include uses an absolute home path; breaks if `~/.exe-devbox` moves. | Resolve `$HOME` at write time; `devbox setup` rewrites the shim if the path in config changes. |
 
 ---
 
@@ -375,12 +408,12 @@ suggest link so the user can apply it in one click.
 
 - **M1 — Skeleton:** Go module, cobra skeleton, `devbox doctor` + reflection
   discovery + `--json`. (validate the reflection/CLI ergonomics)
-- **M2 — `devbox setup`:** dep install (node/portless/caddy), portless daemon,
-  `~/.exe-devbox/caddy` management, share-port suggest link.
+- **M2 — `devbox setup`:** dep install (node/portless/nginx), portless daemon,
+  `~/.exe-devbox/nginx` management, share-port suggest link.
 - **M3 — `devbox new`:** apex/provider detection, manual flow + suggest link +
-  Caddy route merge. (no Cloudflare automation yet)
+  nginx server block write + reload. (no Cloudflare automation yet)
 - **M4 — Cloudflare API path:** token-based CNAME apply; DC URL documented.
-- **M5 — Polish:** `status`, `caddy` subcmds, `doctor` table, docs, install
+- **M5 — Polish:** `status`, `nginx` subcmds, `doctor` table, docs, install
   script (`go install` + a one-liner).
 
 ---
