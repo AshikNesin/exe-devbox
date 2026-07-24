@@ -1,0 +1,312 @@
+package cmds
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+
+	"github.com/ashiknesin/exe-devbox/internal/config"
+	"github.com/ashiknesin/exe-devbox/internal/deps"
+	"github.com/ashiknesin/exe-devbox/internal/nginx"
+	"github.com/ashiknesin/exe-devbox/internal/output"
+	"github.com/ashiknesin/exe-devbox/internal/portless"
+	"github.com/ashiknesin/exe-devbox/internal/reflection"
+	"github.com/ashiknesin/exe-devbox/internal/system"
+	"github.com/spf13/cobra"
+)
+
+const defaultNginxPort = 8080
+
+func newSetupCmd() *cobra.Command {
+	var vmName, nginxPortStr, portlessPortStr string
+	cmd := &cobra.Command{
+		Use:   "setup",
+		Short: "Install deps, manage nginx config, discover VM identity",
+		Long: `Bring a fresh exe.dev VM up to a working nginx + portless reverse-proxy
+stack for multi-project dev. Idempotent and safe to re-run.
+
+Steps:
+  1. discover VM name + default port from reflection
+  2. install node (LTS), portless, nginx (skip if present)
+  3. ensure the shared portless daemon on :8888 (HTTP)
+  4. write nginx config under ~/.exe-devbox/nginx + the /etc include shim
+  5. point exe.dev's proxy at nginx (prints a suggest link if not already)
+  6. run doctor`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts := setupOpts{
+				vmName:       vmName,
+				nginxPort:    parsePort(nginxPortStr, defaultNginxPort),
+				portlessPort: parsePort(portlessPortStr, portless.DaemonPort),
+			}
+			res := runSetup(cmd.Context(), opts)
+			output.Global.Print(output.Result{OK: res.ok, Exit: exitCode(res.ok), Data: res.report, Message: res.errMsg})
+			if !res.ok {
+				return fmt.Errorf("setup did not complete: %s", res.errMsg)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&vmName, "vm", "", "VM name (default: auto-discovered from reflection)")
+	cmd.Flags().StringVar(&nginxPortStr, "nginx-port", "", "port for nginx to listen on (default 8080)")
+	cmd.Flags().StringVar(&portlessPortStr, "portless-port", "", "port for the portless daemon (default 8888)")
+	return cmd
+}
+
+type setupOpts struct {
+	vmName       string
+	nginxPort    int
+	portlessPort int
+}
+
+type setupReport struct {
+	VM            reflection.Identity `json:"vm"`
+	NginxPort     int                 `json:"nginx_port"`
+	PortlessPort  int                 `json:"portless_port"`
+	NodeVersion   string              `json:"node_version,omitempty"`
+	Steps         []setupStep         `json:"steps"`
+	SuggestLink   string              `json:"suggest_link,omitempty"`
+}
+
+type setupStep struct {
+	Name   string `json:"name"`
+	Status string `json:"status"` // "ok" | "skip" | "fail"
+	Detail string `json:"detail,omitempty"`
+}
+
+type setupResult struct {
+	report  setupReport
+	ok      bool
+	errMsg  string
+}
+
+func runSetup(ctx context.Context, opts setupOpts) setupResult {
+	out := output.Global
+	p, err := paths()
+	if err != nil {
+		return setupResult{ok: false, errMsg: err.Error()}
+	}
+	report := setupReport{NginxPort: opts.nginxPort, PortlessPort: opts.portlessPort}
+	step := func(name, status, detail string) {
+		report.Steps = append(report.Steps, setupStep{name, status, detail})
+	}
+
+	// 1. discover identity
+	out.Step("discovering VM identity")
+	rc := reflection.New()
+	id, err := rc.Discover(ctx)
+	if err != nil {
+		return setupResult{report: report, ok: false, errMsg: "reflection: " + err.Error()}
+	}
+	if opts.vmName != "" {
+		id.Name = opts.vmName // override wins; recompute cname target via Identity.CNAME()
+	}
+	report.VM = id
+	step("reflection", "ok", fmt.Sprintf("%s port=%d cname=%s", id.Name, id.DefaultPort, id.CNAME()))
+	out.OK("VM %s (default port %d, cname %s)", id.Name, id.DefaultPort, id.CNAME())
+
+	// ensure config dir
+	if err := p.EnsureDirs(); err != nil {
+		return setupResult{report: report, ok: false, errMsg: err.Error()}
+	}
+
+	// 2. install deps
+	out.Step("installing dependencies (node LTS, portless, nginx)")
+	nodeV, err := deps.InstallNode(ctx, false)
+	if err != nil {
+		step("node", "fail", err.Error())
+		return setupResult{report: report, ok: false, errMsg: "node: " + err.Error()}
+	}
+	report.NodeVersion = nodeV
+	step("node", cond(nodeV != "", "ok", "fail"), nodeV)
+	out.OK("node %s", nodeV)
+
+	if err := deps.InstallPortless(ctx); err != nil {
+		step("portless bin", "fail", err.Error())
+		return setupResult{report: report, ok: false, errMsg: "portless: " + err.Error()}
+	}
+	step("portless bin", "ok", "installed")
+	out.OK("portless installed")
+
+	if err := deps.InstallNginx(ctx); err != nil {
+		step("nginx", "fail", err.Error())
+		return setupResult{report: report, ok: false, errMsg: "nginx: " + err.Error()}
+	}
+	step("nginx", "ok", "/usr/sbin/nginx")
+	out.OK("nginx present")
+
+	// 3. portless daemon
+	out.Step("ensuring portless daemon on :%d (HTTP)", opts.portlessPort)
+	if err := portless.EnsureDaemon(); err != nil {
+		step("portless daemon", "fail", err.Error())
+		return setupResult{report: report, ok: false, errMsg: "portless daemon: " + err.Error()}
+	}
+	step("portless daemon", "ok", "active")
+	out.OK("portless daemon active on :%d", opts.portlessPort)
+
+	// 4. nginx config: handle Caddy squatting on the port, write shim + base
+	out.Step("configuring nginx on :%d", opts.nginxPort)
+	if err := ensureNginxPortFree(opts.nginxPort, gflags.Yes); err != nil {
+		step("nginx port", "fail", err.Error())
+		return setupResult{report: report, ok: false, errMsg: err.Error()}
+	}
+	if err := writeNginxConfigs(p, opts.nginxPort); err != nil {
+		step("nginx config", "fail", err.Error())
+		return setupResult{report: report, ok: false, errMsg: "nginx config: " + err.Error()}
+	}
+	step("nginx config", "ok", p.Nginx)
+	out.OK("nginx config at %s", p.Nginx)
+
+	// validate + enable + (re)start nginx
+	if out2, err := nginx.Test(); err != nil {
+		step("nginx -t", "fail", string(out2))
+		return setupResult{report: report, ok: false, errMsg: "nginx -t: " + string(out2)}
+	}
+	if out2, err := system.AsRoot("systemctl", "enable", "--now", "nginx").CombinedOutput(); err != nil {
+		step("nginx enable", "fail", string(out2))
+		return setupResult{report: report, ok: false, errMsg: "nginx enable: " + string(out2)}
+	}
+	if out2, err := system.AsRoot("systemctl", "restart", "nginx").CombinedOutput(); err != nil {
+		step("nginx restart", "fail", string(out2))
+		return setupResult{report: report, ok: false, errMsg: "nginx restart: " + string(out2)}
+	}
+	step("nginx", "ok", "active")
+	out.OK("nginx active on :%d", opts.nginxPort)
+
+	// persist config
+	cfg, _ := p.Load()
+	cfg.VMName = id.Name
+	cfg.Email = id.Email
+	cfg.DefaultPort = id.DefaultPort
+	cfg.NginxPort = opts.nginxPort
+	cfg.PortlessPort = opts.portlessPort
+	cfg.CNAMETarget = id.CNAME()
+	_ = p.Save(cfg)
+
+	// 5. share-port suggest link if reflection port != nginx port
+	if id.DefaultPort != opts.nginxPort {
+		link := suggestSharePort(id.Name, opts.nginxPort)
+		report.SuggestLink = link
+		out.Heading("action needed: point exe.dev at nginx")
+		out.Info("exe.dev currently routes port %d to this VM; nginx is on %d.", id.DefaultPort, opts.nginxPort)
+		out.Info("click to retarget (owner key required):")
+		out.Line("  " + link)
+	}
+
+	out.OK("setup complete")
+	return setupResult{report: report, ok: true}
+}
+
+// ensureNginxPortFree detects if something else (e.g. Caddy from the reference
+// doc setup) is squatting on the nginx port and offers to stop+disable it.
+func ensureNginxPortFree(port int, assumeYes bool) error {
+	// Is our own nginx already there? Fine.
+	if system.PortListening(port).Pass {
+		owner := portOwner(port)
+		// Could be nginx (good) or another service (needs handling).
+		if owner == "nginx" {
+			return nil // nginx already serving, nothing to do
+		}
+		// Caddy squatting (reference doc setup)? Stop + disable it.
+		if owner == "caddy" {
+			if !assumeYes && !confirm(fmt.Sprintf("Caddy is using :%d. Stop and disable Caddy so nginx can take over?", port)) {
+				return fmt.Errorf("port :%d in use by caddy; declined to stop it", port)
+			}
+			if out, err := system.AsRoot("systemctl", "stop", "caddy").CombinedOutput(); err != nil {
+				return fmt.Errorf("stop caddy: %w: %s", err, out)
+			}
+			_ = system.AsRoot("systemctl", "disable", "caddy").Run()
+			output.Global.OK("stopped Caddy")
+			return nil
+		}
+		return fmt.Errorf("port :%d in use by %q; stop it first", port, owner)
+	}
+	return nil
+}
+
+// portOwner returns the process name listening on port, or "".
+func portOwner(port int) string {
+	out, err := exec.Command("ss", "-tlnp").CombinedOutput()
+	if err != nil {
+		return ""
+	}
+	needle := fmt.Sprintf(":%d", port)
+	for _, line := range strings.Split(string(out), "\n") {
+		if !strings.Contains(line, needle) {
+			continue
+		}
+		if i := strings.Index(line, "users:(("); i >= 0 {
+			rest := line[i+len("users:((") :]
+			if comma := strings.IndexByte(rest, ','); comma > 0 {
+				return rest[:comma]
+			}
+		}
+	}
+	return ""
+}
+
+// writeNginxConfigs writes the include shim (sudo, once) and the base conf.
+func writeNginxConfigs(p config.Paths, port int) error {
+	// base conf (user-owned, no sudo)
+	base := nginx.BaseConf(port)
+	if err := os.WriteFile(p.BaseConf(), []byte(base), 0o644); err != nil {
+		return err
+	}
+	// include shim at /etc/nginx/conf.d/devbox.conf (root-owned). nginx doesn't
+	// expand ~, so we resolve the absolute path here.
+	shim := nginx.IncludeShim(p.Nginx)
+	tmp, err := os.CreateTemp("", "devbox-shim-*.conf")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString(shim); err != nil {
+		return err
+	}
+	tmp.Close()
+	target := "/etc/nginx/conf.d/devbox.conf"
+	if out, err := system.AsRoot("cp", tmp.Name(), target).CombinedOutput(); err != nil {
+		return fmt.Errorf("write %s: %w: %s", target, err, out)
+	}
+	if out, err := system.AsRoot("chmod", "644", target).CombinedOutput(); err != nil {
+		return fmt.Errorf("chmod %s: %w: %s", target, err, out)
+	}
+	return nil
+}
+
+// --- small helpers ---
+
+func parsePort(s string, def int) int {
+	if s == "" {
+		return def
+	}
+	p, err := strconv.Atoi(s)
+	if err != nil || p < 1 || p > 65535 {
+		return def
+	}
+	return p
+}
+
+func cond(b bool, t, f string) string {
+	if b {
+		return t
+	}
+	return f
+}
+
+func confirm(prompt string) bool {
+	if output.Global.JSON {
+		return false // never auto-confirm in JSON mode
+	}
+	fmt.Fprintf(output.Global.ErrW, "%s [y/N]: ", prompt)
+	var resp string
+	fmt.Fscanln(os.Stdin, &resp)
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(resp)), "y")
+}
+
+// suggestLink is defined in link.go.
+
+// keep imports honest
+var _ = strconv.Atoi

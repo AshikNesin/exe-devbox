@@ -15,14 +15,6 @@ func newStatusCmd() *cobra.Command {
 	return stub("status", "Show VM identity, ports, portless routes, and registered domains")
 }
 
-func newSetupCmd() *cobra.Command {
-	return stub("setup", "Install deps, manage nginx config, discover VM identity")
-}
-
-func newNewCmd() *cobra.Command {
-	return stub("new", "Onboard a new project domain (DNS + exe.dev + nginx route)")
-}
-
 func newNginxCmd() *cobra.Command {
 	return stub("nginx", "Manage the devbox-managed nginx config (show/edit/reload)")
 }
