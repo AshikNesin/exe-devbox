@@ -21,7 +21,7 @@ func stub(use, short string) *cobra.Command {
 		Short: short,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			msg := fmt.Sprintf("%q not implemented yet", use)
-			output.Global.Err(msg)
+			output.Global.Err("%s", msg)
 			output.Global.Print(output.Result{OK: false, Exit: 1, Message: msg})
 			return fmt.Errorf("%s", msg)
 		},

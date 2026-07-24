@@ -147,7 +147,8 @@ entries (DNS + exe.dev registration) and the nginx server block for a project.
 ```
 devbox setup [--vm <name>] [--nginx-port 8080] [--portless-port 8888] [--yes]
 devbox new -d <fqdn> [-d <fqdn> ...] [--project <name>] [--to portless|loopback:<port>] [--public] [--wait]
-devbox status
+devbox dev [project] [--dir <path>] [--runner pnpm|npm] [--foreground]
+devbox status [--no-probe]
 devbox nginx (reload | edit | show)
 devbox doctor
 ```
@@ -375,13 +376,57 @@ https://<dcApiUrl>/v2/<apex>/settings/<providerId>/<serviceId>/apply
 
 ## 8. Supporting commands
 
-- **`devbox status`** — VM name, reflection port vs nginx port, portless
-  routes (`portless list`), registered domains from `state/domains.json`,
-  systemd unit states.
+- **`devbox status [--no-probe]`** — VM name, proxy port (nginx + portless),
+  registered domains from `state/domains.json`, and a **live HTTP probe** per
+  domain through nginx (`● live [HTTP 200]` / `○ no nginx route` /
+  `○ backend not running`), plus `portless list`. `--no-probe` skips the HTTP
+  checks for an instant view.
+- **`devbox dev [project]`** — launch a portless project's dev server with the
+  environment Vite HMR needs. See §8a below.
 - **`devbox nginx show | edit | reload`** — `show` prints
   `~/.exe-devbox/nginx/conf.d/*`; `edit` opens `<project>.conf`; `reload` =
   `nginx -t` + `systemctl reload nginx`.
 - **`devbox doctor`** — the health-check table (also runs at end of `setup`).
+
+### 8a. Vite HMR behind exe.dev + nginx (`devbox dev`)
+
+**Symptom:** the app loads over HTTPS, but the console shows
+`WebSocket connection to 'ws://groot.localhost:8888/?token=…' failed` and
+`[vite] failed to connect to websocket`.
+
+**Root cause (NOT nginx):** nginx proxies WebSocket upgrades correctly
+(`map $http_upgrade $connection_upgrade` + `Upgrade`/`Connection` headers).
+The break is that Vite computes its own HMR WebSocket target from the
+`PORTLESS_URL` portless injects (`http://<project>.localhost:8888`), so the
+browser is told to open `ws://<project>.localhost:8888`. That URL is doubly
+broken: `<project>.localhost` resolves to **the user's laptop** (unreachable
+from the browser), and `ws://` from an `https://` page is **mixed content**
+(blocked before it tries).
+
+**Fix:** override the HMR target to the public `wss://<host>:443` name. Both
+groot and nesins-finance read `VITE_HMR_URL` (`packages/core/src/server.ts`):
+```ts
+if (process.env.VITE_HMR_URL) {
+  wsConfig = { server: httpServer, protocol: "wss", host: process.env.VITE_HMR_URL, clientPort: 443 };
+}
+```
+`devbox dev <project>` sets `VITE_HMR_URL=<public-domain>` (looked up from
+state) plus `PORTLESS_PORT`/`PORTLESS_HTTPS=0`, prepends the **nvm bin dir**
+to `PATH` (node/pnpm/portless aren't on a non-login PATH on this VM — without
+it the dev server's child `pnpm` calls fail with `ENOENT`), kills any leftover
+dev tree holding the `*.localhost` route, and runs `<runner> run dev`.
+
+Boot log confirms it: `HMR configured for tunnel: wss://<host>:443`, and
+`/@vite/client` then injects `socketProtocol="wss"`, `hmrPort=443`,
+`socketHost="<public-host>"`. By default it detaches into its own session
+(`--foreground` to keep it in the shell); logs to
+`~/.exe-devbox/state/<project>-dev.log`.
+
+> **Lesson:** any dev server that self-computes a public/HMR URL from a
+> loopback or `.localhost` address will hand the browser an unreachable
+> (and mixed-content) WebSocket target when served through exe.dev + a proxy.
+> Always launch portless dev servers via `devbox dev` (or set `VITE_HMR_URL`
+> by hand) — `pnpm run dev` alone reproduces the bug.
 
 ---
 
@@ -435,7 +480,7 @@ suggest link so the user can apply it in one click.
 | R10 | **New:** `npm i -g portless` needs sudo (NodeSource globals → `/usr/lib/node_modules`). | Fixed: `deps.InstallPortless` uses `sudo npm`. |
 | R11 | **New:** `ss -tlnp` hides process names without root → Caddy handoff detection failed. | Fixed: `portOwner` runs `sudo ss` + trims quotes. |
 | R12 | **New:** `systemctl reload nginx` has a stale-routing window after adding a server block. | Fixed: `nginx.Reload` retries + 200ms settle. |
-| R13 | Open: `devbox new` doesn't yet `--wire` project launchers / HMR env (groot/finance need manual `VITE_HMR_URL`). | Print hint now (shipped); `--wire` is v2. |
+| R13 | ✅ Resolved: `devbox dev <project>` launches portless dev servers with `VITE_HMR_URL=<public-host>` + nvm bin on PATH (resolves the `pnpm ENOENT` child-spawn failure + the broken `ws://<project>.localhost:8888` HMR target). | Shipped. |
 
 ---
 
@@ -450,8 +495,8 @@ suggest link so the user can apply it in one click.
   nginx server block write + reload. Multi-domain + loopback backends.
   (shipped; live for `devbox.nesin.io` + `devbox.ashiknesin.com` → Shelley)
 - ⏳ **M4 — Cloudflare API path:** token-based CNAME apply; DC URL documented.
-- ⏳ **M5 — Polish:** ✅ `status` (live HTTP probe per domain) shipped; `nginx` subcmds,
-  `doctor` table, docs remaining.
+- ⏳ **M5 — Polish:** ✅ `status` + `dev` (HMR-aware dev launcher) shipped; `nginx`
+  subcmds, `doctor` table, docs remaining.
 
 ---
 

@@ -52,6 +52,7 @@ See ` + "`devbox <cmd> --help`" + ` and docs/PRD.md.`,
 	root.AddCommand(newStatusCmd())
 	root.AddCommand(newSetupCmd())
 	root.AddCommand(newNewCmd())
+	root.AddCommand(newDevCmd())
 	root.AddCommand(newNginxCmd())
 	return root
 }
