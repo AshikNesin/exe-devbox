@@ -4,7 +4,10 @@
 > exe.dev VM" workflow documented in
 > `~/Learn/multi-project-caddy-portless-exedev.md`.
 >
-> Status: **Draft**. Owner: nesintechnologies@gmail.com (VM `nesins-devbox`).
+> Status: **M1–M3 shipped; live on `nesins-devbox`.** Caddy fully removed;
+> nginx + portless in production. M4 (Cloudflare API automation) next.
+>
+> Owner: nesintechnologies@gmail.com (VM `nesins-devbox`).
 
 ---
 
@@ -78,14 +81,22 @@ we're removing.
 
 ### Why nginx (not Caddy)
 
-The reference doc used Caddy, but exe.dev terminates TLS so Caddy's one big
-feature (automatic HTTPS) is turned off (`auto_https off`). What's left is
-plain HTTP reverse-proxying + a `Host` header rewrite — nginx does this
-natively with zero ceremony, and unlike Caddy-with-`admin off`, **`nginx -t &&
-systemctl reload nginx` just works** (no restart-only quirk). nginx is also
-preinstalled on the VM (`/usr/bin/nginx`) and ubiquitous. We keep **portless**
-as the per-project route layer so existing `portless run` dev scripts are
-untouched.
+We started on Caddy (see `~/Learn/multi-project-caddy-portless-exedev.md`) and
+**migrated to nginx**, now live in production. Rationale: exe.dev terminates
+TLS so Caddy's headline feature (automatic HTTPS) was turned off
+(`auto_https off`), leaving only plain HTTP reverse-proxying + a `Host` header
+rewrite — which nginx does natively. nginx is preinstalled on the VM
+(`/usr/sbin/nginx`) and ubiquitous. We keep **portless** as the per-project
+route layer so existing `portless run` dev scripts are untouched.
+
+> **Migration verified (2026-07-24):** Caddy `apt-get purge`'d; nginx serves the
+> live Shelley domains on `:8080` with byte-equivalent behavior (HTTP 200,
+> same `307` auth redirect through exe.dev). `devbox doctor` all-green.
+
+**One nginx quirk worth knowing:** `systemctl reload nginx` can return just
+before workers finish loading new config, so a request fired immediately after
+adding a server block may hit a stale `404`. `devbox`'s `nginx.Reload` retries
++ settles 200ms to close that window (see `internal/nginx/conf.go`).
 
 ### Domain Connect reality check
 
@@ -134,8 +145,8 @@ entries (DNS + exe.dev registration) and the nginx server block for a project.
 ## 5. CLI surface
 
 ```
-devbox setup [--vm <name>] [--port <n>] [--nginx-port 8080] [--portless-port 8888]
-devbox new --domain <fqdn> [--project <name>] [--to <backend>] [--public]
+devbox setup [--vm <name>] [--nginx-port 8080] [--portless-port 8888] [--yes]
+devbox new -d <fqdn> [-d <fqdn> ...] [--project <name>] [--to portless|loopback:<port>] [--public] [--wait]
 devbox status
 devbox nginx (reload | edit | show)
 devbox doctor
@@ -161,8 +172,9 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
      `/usr/bin/node`; detect existing nvm install and reuse its node if
      newer. Resolve "latest LTS" from
      `https://nodejs.org/dist/index.json` (filter `lts` field).
-   - **portless** (`portless.sh`) — `npm i -g portless` using the node above.
-   - **nginx** — `apt-get install -y nginx`. Reuse if `/usr/bin/nginx`
+   - **portless** (`portless.sh`) — `sudo npm i -g portless` (NodeSource node
+     installs globals into `/usr/lib/node_modules`, which needs root).
+   - **nginx** — `apt-get install -y nginx`. Reuse if `/usr/sbin/nginx`
      exists (it is already present on this VM).
    - Requires sudo; prompt via `sudo` unless running as root or `--yes`.
 
@@ -188,8 +200,11 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
    - Each per-project server block `listen`s on `<nginx-port>` and uses
      `server_name <domain>`. Multiple domains → one block via space-separated
      `server_name`.
-   - Reload semantics: `nginx -t && systemctl reload nginx` — **reload works**
-     (no restart-only quirk like Caddy's `admin off`).
+   - Reload semantics: **`sudo nginx -t && sudo systemctl reload nginx`**.
+     `nginx -t` must run as root — non-root fails on `/run/nginx.pid`
+     permission even when config is valid. Reload (not restart) works; it can
+     return just before workers load new config, so `devbox` retries + settles
+     (see "Why nginx" above).
 
 5. **Write an nginx-reload helper** `~/.exe-devbox/bin/devbox-nginx-reload`
   (`nginx -t` then `systemctl reload nginx`) and add `~/.exe-devbox/bin`
@@ -197,8 +212,13 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
 
 6. **Point exe.dev at nginx** — if `default_port != <nginx-port>`: emit the
    owner-only suggest link:
-   `https://exe.dev/suggest?command=ssh%20exe.dev%20share%20port%20<vm>%20<nginx-port>`
-   (can't run it — needs owner key).
+   `https://exe.dev/suggest?command=share+port+<vm>+<nginx-port>`
+   (lobby-command form, not `ssh exe.dev …`; can't run it — needs owner key).
+
+   **Caddy handoff (done on this VM):** if another service (e.g. Caddy from the
+   reference-doc era) is squatting on `<nginx-port>`, setup detects it via
+   `sudo ss -tlnp` (process names need root), prompts (or proceeds with
+   `--yes`), and stops+disables the unit so nginx can take over.
 
 7. **`devbox doctor` checks** at the end: node/npm/portless/nginx on PATH;
    `systemctl is-active nginx portless`; ports `:8080`/`:8888` listening;
@@ -232,16 +252,18 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
 ### 7.1 Inputs
 
 ```
-devbox new --domain new-app.devbox.nesin.io \
+devbox new -d new-app.devbox.nesin.io \
+           [-d <more-domains>...]   # repeat for multi-domain backends
            [--project new-app] \
            [--to portless]          # default: portless (= *.localhost route)
            [--public]               # also emit set-public suggest link
+           [--wait]                 # poll DNS until CNAME resolves
 ```
 
-- `--domain` (required): the public FQDN to serve.
-- `--project` (default: first label of `--domain`, e.g. `new-app`): the
-  portless route name → `<project>.localhost`, and the nginx server-name /
-  conf filename.
+- `-d/--domain` (required, repeatable): the public FQDN(s) to serve. Multiple
+  domains share one backend (e.g. Shelley on two hostnames).
+- `--project` (default: first label of the first domain, e.g. `new-app`): the
+  portless route name → `<project>.localhost`, and the nginx conf filename.
 - `--to`: target backend. `portless` (default) writes the
   `proxy_set_header Host <project>.localhost` block; `loopback:<port>` writes
   a direct `proxy_pass http://127.0.0.1:<port>` (for non-portless services
@@ -291,10 +313,14 @@ The CNAME to add is always:
   (`--wait`), with a sensible timeout.
 
 **Step D — Register the domain on exe.dev (owner-only → suggest link).**
-- Emit:
-  `https://exe.dev/suggest?command=ssh%20exe.dev%20domain%20add%20<vm>%20<domain>`
-- If `--public`, also:
-  `https://exe.dev/suggest?command=ssh%20exe.dev%20share%20set-public%20<vm>`
+Suggest links take the **lobby command** (e.g. `domain add <vm> <domain>`),
+*not* the `ssh exe.dev …` form — see https://exe.dev/docs/suggest-links.md .
+Note: `domain add` is **not** in the documented suggestable set (only
+`share port` / `share set-public` / `share add` / `resize` / `ls` are), so we
+emit both a suggest link *and* a fallback `ssh exe.dev …` shell command.
+- Emit: `https://exe.dev/suggest?command=domain+add+<vm>+<domain>`
+- Fallback (paste at https://exe.dev/shell): `ssh exe.dev domain add <vm> <domain>`
+- If `--public`, also: `https://exe.dev/suggest?command=share+set-public+<vm>`
 - These cannot be run by the CLI (owner SSH key) — they're click-to-run links.
 
 **Step E — Add the nginx route (on-VM, automated).**
@@ -376,16 +402,20 @@ suggest link so the user can apply it in one click.
 
 ## 10. Dependencies & tech choices (Go CLI)
 
-- **Go 1.26**, single static binary, cobra or urfave/cli for flags/subcommands.
-- No heavy deps; prefer stdlib + small libs:
+- **Go 1.26**, single static binary, **cobra** for flags/subcommands.
+- Minimal deps; stdlib-first:
   - `net/http` for reflection + Cloudflare API.
-  - `github.com/mattn/go-shellwords` or manual for suggest-link encoding.
-  - A public-suffix list lib (`golang.org/x/net/publicsuffix`) for apex
-    detection.
-  - Colored TTY output (`fatih/color`) — auto-disabled if not a TTY / `--json`.
+  - `net/url.QueryEscape` for suggest-link encoding (no shellwords dep).
+  - `golang.org/x/net/publicsuffix` for apex detection (the one external dep).
+  - Colored TTY output via raw ANSI (no `fatih/color` dep), auto-disabled when
+    not a TTY or `--json`.
 - DNS lookups via the system resolver (`net.LookupNS`, `net.LookupTXT`) — no
-  shell-out to `dig` required.
+  shell-out to `dig` required. Note: DC discovery TXT records are often
+  scheme-less (`api.cloudflare.com/...`), so we accept any host/path token.
 - Telemetry: **none**. Purely local.
+- **Build/install:** `make install` builds to `~/.local/bin/devbox` and
+  regenerates bash completion to `~/dotfiles/bash/devbox-completion.bash`
+  (sourced from `~/.bashrc`).
 
 ---
 
@@ -394,27 +424,33 @@ suggest link so the user can apply it in one click.
 | # | Risk / question | Lean |
 |---|---|---|
 | R1 | Cloudflare DC can't be one-click without template onboarding. | Ship direct-API fallback now; track real DC as a post-onboarding epic. |
-| R2 | CNAME target was specified as `exe.dev` but resolves only as `exe.xyz`. | Use `exe.xyz`; confirm with user. |
+| R2 | ✅ Resolved: CNAME target is `<vm>.exe.xyz` (`exe.dev` doesn't resolve). | Confirmed via cnames.md + reflection. |
 | R3 | Node LTS install method: NodeSource apt vs nvm. | NodeSource for system `/usr/bin/node` (services need absolute path); reuse nvm if already newer. |
 | R4 | Should `devbox new` also write project launchers / HMR env? | v1: print only. v2: opt-in `--wire`. |
-| R5 | exe.dev suggest-link command encoding — confirm exact `ssh exe.dev …` syntax (`domain add <vm> <domain>` order, `share port <vm> <n>`). | Confirm against `exe.dev/docs.md` before shipping. |
+| R5 | ✅ Resolved: suggest links take the **lobby command** (e.g. `share port <vm> <n>`), not `ssh exe.dev …`. `domain add` isn't in the suggestable set → emit suggest link + fallback shell command. | Confirmed against exe.dev/docs/suggest-links.md + cli-domain.md. |
 | R6 | Public-suffix list staleness for apex detection. | Bundle `x/net/publicsuffix` (compiled-in DAT); accept `--apex` override. |
-| R7 | Re-running `devbox new` for an existing project. | Per-project `<project>.conf` is rewritten wholesale (deterministic); base `00-devbox-base.conf` regenerated. State file updated, not duplicated. |
-| R8 | `/etc/nginx/conf.d/devbox.conf` include uses an absolute home path; breaks if `~/.exe-devbox` moves. | Resolve `$HOME` at write time; `devbox setup` rewrites the shim if the path in config changes. |
+| R7 | ✅ Resolved: re-running `devbox new` rewrites `<project>.conf` wholesale (deterministic); `devbox setup` regenerates `00-devbox-base.conf`. State file upserts by FQDN, not duplicated. | Shipped. |
+| R8 | ✅ Resolved: `/etc/nginx/conf.d/devbox.conf` resolves `$HOME` at write time; `devbox setup` rewrites it idempotently if the path changes. | Shipped. |
+| R9 | **New (from cutover):** `nginx -t` must run as root (non-root fails on `/run/nginx.pid` perm). | Fixed: `nginx.Test()` uses `system.AsRoot`. |
+| R10 | **New:** `npm i -g portless` needs sudo (NodeSource globals → `/usr/lib/node_modules`). | Fixed: `deps.InstallPortless` uses `sudo npm`. |
+| R11 | **New:** `ss -tlnp` hides process names without root → Caddy handoff detection failed. | Fixed: `portOwner` runs `sudo ss` + trims quotes. |
+| R12 | **New:** `systemctl reload nginx` has a stale-routing window after adding a server block. | Fixed: `nginx.Reload` retries + 200ms settle. |
+| R13 | Open: `devbox new` doesn't yet `--wire` project launchers / HMR env (groot/finance need manual `VITE_HMR_URL`). | Print hint now (shipped); `--wire` is v2. |
 
 ---
 
 ## 12. Milestones
 
-- **M1 — Skeleton:** Go module, cobra skeleton, `devbox doctor` + reflection
-  discovery + `--json`. (validate the reflection/CLI ergonomics)
-- **M2 — `devbox setup`:** dep install (node/portless/nginx), portless daemon,
-  `~/.exe-devbox/nginx` management, share-port suggest link.
-- **M3 — `devbox new`:** apex/provider detection, manual flow + suggest link +
-  nginx server block write + reload. (no Cloudflare automation yet)
-- **M4 — Cloudflare API path:** token-based CNAME apply; DC URL documented.
-- **M5 — Polish:** `status`, `nginx` subcmds, `doctor` table, docs, install
-  script (`go install` + a one-liner).
+- ✅ **M1 — Skeleton:** Go module, cobra skeleton, `devbox doctor` + reflection
+  discovery + `--json`. (shipped)
+- ✅ **M2 — `devbox setup`:** dep install (node/portless/nginx), portless daemon,
+  `~/.exe-devbox/nginx` management + Caddy handoff, share-port suggest link.
+  (shipped; used for the live Caddy→nginx cutover)
+- ✅ **M3 — `devbox new`:** apex/provider detection, manual flow + suggest link +
+  nginx server block write + reload. Multi-domain + loopback backends.
+  (shipped; live for `devbox.nesin.io` + `devbox.ashiknesin.com` → Shelley)
+- ⏳ **M4 — Cloudflare API path:** token-based CNAME apply; DC URL documented.
+- ☐ **M5 — Polish:** `status`, `nginx` subcmds, `doctor` table, docs, `make install`.
 
 ---
 
