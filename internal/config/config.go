@@ -1,6 +1,6 @@
-// Package config owns the ~/.exe-devbox directory layout: where files live,
+// Package config owns the ~/.exebox directory layout: where files live,
 // the persisted config.json, and the domains state file. Centralizing paths
-// here means the rest of the CLI never hardcodes "~/.exe-devbox".
+// here means the rest of the CLI never hardcodes "~/.exebox".
 package config
 
 import (
@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 )
 
-const DirName = ".exe-devbox"
+const DirName = ".exebox"
 
 // Paths holds resolved filesystem locations for one config root.
 type Paths struct {
-	Root    string // ~/.exe-devbox
+	Root    string // ~/.exebox
 	Config  string // config.json
 	Bin     string // bin/
 	Nginx   string // nginx/conf.d/
@@ -23,7 +23,7 @@ type Paths struct {
 	Domains string // state/domains.json
 }
 
-// New resolves paths for the given root. If root is empty, uses ~/.exe-devbox.
+// New resolves paths for the given root. If root is empty, uses ~/.exebox.
 func New(root string) (Paths, error) {
 	if root == "" {
 		home, err := os.UserHomeDir()
@@ -57,8 +57,8 @@ func (p Paths) EnsureDirs() error {
 	return nil
 }
 
-// File holds the persisted ~/.exe-devbox/config.json. It's the cache of what
-// devbox discovered/configured so subsequent runs don't need to re-discover.
+// File holds the persisted ~/.exebox/config.json. It's the cache of what
+// exebox discovered/configured so subsequent runs don't need to re-discover.
 type File struct {
 	VMName        string `json:"vm_name,omitempty"`
 	Email         string `json:"email,omitempty"`
@@ -98,7 +98,7 @@ func (p Paths) Save(f File) error {
 	return os.WriteFile(p.Config, b, 0o644)
 }
 
-// Domain is one row in state/domains.json: a public FQDN devbox wired up.
+// Domain is one row in state/domains.json: a public FQDN exebox wired up.
 type Domain struct {
 	Domain  string `json:"domain"`            // public FQDN, e.g. new-app.devbox.nesin.io
 	Project string `json:"project"`           // portless route name -> <project>.localhost
@@ -155,5 +155,5 @@ func (p Paths) ProjectConf(project string) string {
 
 // BaseConf returns the CLI-managed nginx base config path.
 func (p Paths) BaseConf() string {
-	return filepath.Join(p.Nginx, "00-devbox-base.conf")
+	return filepath.Join(p.Nginx, "00-exebox-base.conf")
 }

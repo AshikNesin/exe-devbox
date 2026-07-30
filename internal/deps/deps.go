@@ -1,4 +1,4 @@
-// Package deps installs the toolchain devbox needs: Node.js (latest LTS),
+// Package deps installs the toolchain exebox needs: Node.js (latest LTS),
 // portless, and nginx. Each installer is idempotent: if the tool is already
 // present (and meets the bar), it's a no-op.
 //
@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ashiknesin/exe-devbox/internal/system"
+	"github.com/ashiknesin/exebox/internal/system"
 )
 
 // NodeLTSResolution is the latest LTS release from nodejs.org/dist/index.json.

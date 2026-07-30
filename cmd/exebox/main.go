@@ -1,4 +1,4 @@
-// Command devbox automates multi-project dev behind nginx + portless on an
+// Command exebox automates multi-project dev behind nginx + portless on an
 // exe.dev VM. See docs/PRD.md.
 package main
 
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ashiknesin/exe-devbox/cmd/devbox/cmds"
+	"github.com/ashiknesin/exebox/cmd/exebox/cmds"
 )
 
 // Version is set via -ldflags at build time.

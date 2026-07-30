@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ashiknesin/exe-devbox/internal/output"
-	"github.com/ashiknesin/exe-devbox/internal/reflection"
-	"github.com/ashiknesin/exe-devbox/internal/system"
+	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exebox/internal/reflection"
+	"github.com/ashiknesin/exebox/internal/system"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +33,7 @@ and whether :8080/:8888 are listening. Exits non-zero if any check fails.`,
 	return cmd
 }
 
-// doctorReport is the JSON payload for `devbox doctor`.
+// doctorReport is the JSON payload for `exebox doctor`.
 type doctorReport struct {
 	VM        *reflection.Identity `json:"vm,omitempty"`
 	Checks    []system.Check       `json:"checks"`
@@ -95,7 +95,7 @@ func runDoctor(ctx context.Context) (doctorReport, bool) {
 
 func renderDoctor(r doctorReport) {
 	out := output.Global
-	out.Heading("devbox doctor")
+	out.Heading("exebox doctor")
 	if r.VM != nil {
 		out.Info("VM: %s  port: %d  cname: %s", r.VM.Name, r.VM.DefaultPort, r.VM.CNAME())
 		if r.VM.Email != "" {

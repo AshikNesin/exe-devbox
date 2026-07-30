@@ -1,5 +1,5 @@
 // Package dns resolves the authoritative DNS provider of a domain's apex and
-// classifies it for the CNAME-add strategy in `devbox new`:
+// classifies it for the CNAME-add strategy in `exebox new`:
 //
 //   - cloudflare:   NS contains *.cloudflare.com (direct API apply with a token)
 //   - domainconnect: apex publishes TXT _domainconnect.<apex> (DC apply URL)
@@ -85,7 +85,7 @@ func Investigate(domain string) (Result, error) {
 	return r, nil
 }
 
-// Record is the CNAME to add (what devbox prints/creates).
+// Record is the CNAME to add (what exebox prints/creates).
 type Record struct {
 	Host   string // name relative to apex, e.g. "new-app.devbox"
 	Type   string // "CNAME"

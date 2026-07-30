@@ -1,10 +1,10 @@
-# exe-devbox Makefile
+# exebox Makefile
 # Common dev workflows: build, install (binary + bash completion), test, run.
 
-BINARY   := devbox
+BINARY   := exebox
 BIN_DIR  := $(HOME)/.local/bin
-DOTFILES := $(HOME)/dotfiles/bash/devbox-completion.bash
-PKG      := ./cmd/devbox
+DOTFILES := $(HOME)/dotfiles/bash/exebox-completion.bash
+PKG      := ./cmd/exebox
 VERSION  := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 .PHONY: all build install completion run test vet fmt clean

@@ -1,4 +1,4 @@
-module github.com/ashiknesin/exe-devbox
+module github.com/ashiknesin/exebox
 
 go 1.26
 

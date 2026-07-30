@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ashiknesin/exe-devbox/internal/output"
-	"github.com/ashiknesin/exe-devbox/internal/portless"
+	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exebox/internal/portless"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ work through exe.dev + nginx. Without this, Vite computes its HMR WebSocket
 target from portless's injected PORTLESS_URL (ws://<project>.localhost:8888),
 which the browser can't reach and is blocked as mixed content.
 
-Looks up <project> in devbox state (devbox new) to get its public domain, sets
+Looks up <project> in exebox state (exebox new) to get its public domain, sets
 VITE_HMR_URL=<public-domain> + PORTLESS_PORT/HOST, kills any leftover dev
 tree so the portless route name is free, then runs the dev script.
 
@@ -87,7 +87,7 @@ func runDev(o devOpts) devResult {
 		if len(portlessProjects) == 1 {
 			o.project = portlessProjects[0]
 		} else {
-			return devResult{false, "specify a project: devbox dev <project>"}
+			return devResult{false, "specify a project: exebox dev <project>"}
 		}
 	}
 
@@ -114,7 +114,7 @@ func runDev(o devOpts) devResult {
 
 	// Ensure the portless daemon is up (dev servers register on it).
 	if !portless.ServiceActive() {
-		out.Warn("portless daemon not active; start it with: devbox setup")
+		out.Warn("portless daemon not active; start it with: exebox setup")
 	}
 
 	out.Step("starting %s dev (HMR -> wss://%s:443)", o.project, hmrHost)
@@ -188,12 +188,12 @@ func runDev(o devOpts) devResult {
 	out.OK("%s dev started (pid %d, runner=%s)", o.project, devCmd.Process.Pid, runner)
 	out.Info("HMR target: wss://%s:443", hmrHost)
 	out.Info("log: %s", logPath)
-	out.Info("wait ~15-20s, then: devbox status")
+	out.Info("wait ~15-20s, then: exebox status")
 	return devResult{ok: true}
 }
 
 // lookupProjectDomain returns the first public domain + backend for a project
-// from devbox state.
+// from exebox state.
 func lookupProjectDomain(project string) (domain, backend string, err error) {
 	p, _ := paths()
 	domains, _ := p.LoadDomains()
@@ -203,7 +203,7 @@ func lookupProjectDomain(project string) (domain, backend string, err error) {
 			return first, d.Backend, nil
 		}
 	}
-	return "", "", fmt.Errorf("project %q not found in devbox state (run: devbox new -d <fqdn> --project %s)", project, project)
+	return "", "", fmt.Errorf("project %q not found in exebox state (run: exebox new -d <fqdn> --project %s)", project, project)
 }
 
 // killPortlessProject kills any process running `portless run --name <project>`

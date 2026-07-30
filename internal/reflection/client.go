@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// DefaultBase is the exe.dev reflection endpoint. Override with EXE_DEVBOX_REFLECTION_URL
+// DefaultBase is the exe.dev reflection endpoint. Override with EXEBOX_REFLECTION_URL
 // (useful for tests; never needed in production).
 const DefaultBase = "https://reflection.int.exe.xyz"
 
@@ -24,7 +24,7 @@ type VM struct {
 	Emoji string `json:"emoji"`
 }
 
-// Identity aggregates everything devbox learns about the VM from reflection.
+// Identity aggregates everything exebox learns about the VM from reflection.
 type Identity struct {
 	Name        string `json:"name"`        // e.g. "nesins-devbox"
 	Email       string `json:"email,omitempty"`       // owner email
@@ -46,14 +46,14 @@ type Client struct {
 // New returns a reflection client with a sensible timeout.
 func New() *Client {
 	return &Client{
-		Base: envOr("EXE_DEVBOX_REFLECTION_URL", DefaultBase),
+		Base: envOr("EXEBOX_REFLECTION_URL", DefaultBase),
 		HTTP: &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
 // Discover fetches the full VM identity (name + email + default port).
 // All three endpoints must succeed; missing any is treated as an error since
-// devbox's whole UX assumes it knows the VM's name and port.
+// exebox's whole UX assumes it knows the VM's name and port.
 func (c *Client) Discover(ctx context.Context) (Identity, error) {
 	vm, err := c.vm(ctx)
 	if err != nil {

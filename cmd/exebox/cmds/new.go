@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ashiknesin/exe-devbox/internal/cloudflare"
-	"github.com/ashiknesin/exe-devbox/internal/config"
-	"github.com/ashiknesin/exe-devbox/internal/dns"
-	"github.com/ashiknesin/exe-devbox/internal/nginx"
-	"github.com/ashiknesin/exe-devbox/internal/output"
-	"github.com/ashiknesin/exe-devbox/internal/reflection"
-	"github.com/ashiknesin/exe-devbox/internal/system"
+	"github.com/ashiknesin/exebox/internal/cloudflare"
+	"github.com/ashiknesin/exebox/internal/config"
+	"github.com/ashiknesin/exebox/internal/dns"
+	"github.com/ashiknesin/exebox/internal/nginx"
+	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exebox/internal/reflection"
+	"github.com/ashiknesin/exebox/internal/system"
 	"github.com/spf13/cobra"
 )
 

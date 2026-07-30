@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ashiknesin/exe-devbox/internal/config"
-	"github.com/ashiknesin/exe-devbox/internal/deps"
-	"github.com/ashiknesin/exe-devbox/internal/nginx"
-	"github.com/ashiknesin/exe-devbox/internal/output"
-	"github.com/ashiknesin/exe-devbox/internal/portless"
-	"github.com/ashiknesin/exe-devbox/internal/reflection"
-	"github.com/ashiknesin/exe-devbox/internal/system"
+	"github.com/ashiknesin/exebox/internal/config"
+	"github.com/ashiknesin/exebox/internal/deps"
+	"github.com/ashiknesin/exebox/internal/nginx"
+	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exebox/internal/portless"
+	"github.com/ashiknesin/exebox/internal/reflection"
+	"github.com/ashiknesin/exebox/internal/system"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +31,7 @@ Steps:
   1. discover VM name + default port from reflection
   2. install node (LTS), portless, nginx (skip if present)
   3. ensure the shared portless daemon on :8888 (HTTP)
-  4. write nginx config under ~/.exe-devbox/nginx + the /etc include shim
+  4. write nginx config under ~/.exebox/nginx + the /etc include shim
   5. point exe.dev's proxy at nginx (prints a suggest link if not already)
   6. run doctor`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -256,10 +256,10 @@ func writeNginxConfigs(p config.Paths, port int) error {
 	if err := os.WriteFile(p.BaseConf(), []byte(base), 0o644); err != nil {
 		return err
 	}
-	// include shim at /etc/nginx/conf.d/devbox.conf (root-owned). nginx doesn't
+	// include shim at /etc/nginx/conf.d/exebox.conf (root-owned). nginx doesn't
 	// expand ~, so we resolve the absolute path here.
 	shim := nginx.IncludeShim(p.Nginx)
-	tmp, err := os.CreateTemp("", "devbox-shim-*.conf")
+	tmp, err := os.CreateTemp("", "exebox-shim-*.conf")
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func writeNginxConfigs(p config.Paths, port int) error {
 		return err
 	}
 	tmp.Close()
-	target := "/etc/nginx/conf.d/devbox.conf"
+	target := "/etc/nginx/conf.d/exebox.conf"
 	if out, err := system.AsRoot("cp", tmp.Name(), target).CombinedOutput(); err != nil {
 		return fmt.Errorf("write %s: %w: %s", target, err, out)
 	}
