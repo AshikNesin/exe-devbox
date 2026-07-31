@@ -2,7 +2,10 @@
 #
 # exebox installer — downloads the latest release binary for linux/amd64.
 # Usage:
-#   curl -fsSL https://github.int.exe.xyz/AshikNesin/exebox/raw/main/install.sh | bash
+#   curl -sfL -H 'Accept: application/vnd.github.raw' \
+#       -o /tmp/install.sh \
+#       https://github.int.exe.xyz/api/v3/repos/AshikNesin/exebox/contents/install.sh \
+#     && bash /tmp/install.sh
 #
 set -euo pipefail
 
