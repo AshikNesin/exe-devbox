@@ -68,6 +68,7 @@ exebox status
 | `exebox doctor` | Run health checks (reflection, deps, services, ports) |
 | `exebox nginx` | Manage the exebox-managed nginx config (show/edit/reload) |
 | `exebox set-token` | Store an exe.dev API token for auto domain registration |
+| `exebox update` | Self-update to the latest GitHub release (`--check` to just check) |
 
 ### Global flags
 

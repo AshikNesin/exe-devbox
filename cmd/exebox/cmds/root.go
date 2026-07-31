@@ -55,6 +55,7 @@ See ` + "`exebox <cmd> --help`" + ` and docs/PRD.md.`,
 	root.AddCommand(newDevCmd())
 	root.AddCommand(newNginxCmd())
 	root.AddCommand(newSetTokenCmd())
+	root.AddCommand(newUpdateCmd(version))
 	return root
 }
 
