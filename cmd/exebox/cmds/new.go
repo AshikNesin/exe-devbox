@@ -11,6 +11,7 @@ import (
 	"github.com/ashiknesin/exebox/internal/cloudflare"
 	"github.com/ashiknesin/exebox/internal/config"
 	"github.com/ashiknesin/exebox/internal/dns"
+	"github.com/ashiknesin/exebox/internal/exeapi"
 	"github.com/ashiknesin/exebox/internal/nginx"
 	"github.com/ashiknesin/exebox/internal/output"
 	"github.com/ashiknesin/exebox/internal/portless"
@@ -220,15 +221,32 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 		}
 	}
 
-	// STEP D: exe.dev domain registration (owner-only).
-	// `domain add` is not a supported suggest command, so we point the user
-	// at https://exe.dev/shell with the exact command to paste.
-	out.Heading("exe.dev registration (owner key required)")
-	out.Info("open https://exe.dev/shell and run:")
+	// STEP D: exe.dev domain registration.
+	// If $EXE_API_TOKEN is set (and scoped to domain add), we register
+	// automatically via the HTTPS API. Otherwise we fall back to manual:
+	// printing the shell command to paste at https://exe.dev/shell.
+	out.Heading("exe.dev registration")
+	api := exeapi.New()
 	for _, d := range opts.domains {
 		shell := domainAdd(id.Name, d)
 		report.SuggestLinks = append(report.SuggestLinks, suggestReport{Kind: "domain-add", Shell: shell})
-		out.Block(shell)
+		if api != nil && api.Available() {
+			out.Step("registering %s via exe.dev API ...", d)
+			resp, err := api.DomainAdd(id.Name, d)
+			if err != nil {
+				out.Warn("API registration failed: %s", err)
+				out.Info("fall back — open https://exe.dev/shell and run:")
+				out.Block(shell)
+			} else {
+				out.OK("registered %s with exe.dev", d)
+				if resp != "" {
+					out.Info("%s", resp)
+				}
+			}
+		} else {
+			out.Info("register %s — open https://exe.dev/shell and run:", d)
+			out.Block(shell)
+		}
 	}
 	if opts.public {
 		link := suggestSetPublic(id.Name)
