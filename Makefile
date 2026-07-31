@@ -54,6 +54,7 @@ RELEASE_DIR := release-build
 GITHUB_API ?= https://api.github.com
 GITHUB_REPO ?= AshikNesin/exebox
 
+release: scripts/release-upload.py
 release:
 	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=v0.2.0"; exit 1; fi
 	@echo "→ building $(VERSION)"
@@ -61,18 +62,7 @@ release:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Version=$(VERSION)" -o $(RELEASE_DIR)/exebox-$(VERSION)-linux-amd64 $(PKG)
 	@chmod +x $(RELEASE_DIR)/exebox-$(VERSION)-linux-amd64
 	@echo "→ uploading binary to releases/$(VERSION)/ via Contents API"
-	@python3 -c " \
-import json, base64; \
-v = '$(VERSION)'; \
-with open('$(RELEASE_DIR)/exebox-' + v + '-linux-amd64', 'rb') as f: \
-    b64 = base64.b64encode(f.read()).decode(); \
-payload = json.dumps({'message': 'Add exebox ' + v + ' binary', 'content': b64}); \
-open('$(RELEASE_DIR)/upload.json', 'w').write(payload) \
-"
-	@curl -sf -X PUT \
-	  "$(GITHUB_API)/repos/$(GITHUB_REPO)/contents/releases/$(VERSION)/exebox-linux-amd64" \
-	  -H 'Content-Type: application/json' \
-	  -d @$(RELEASE_DIR)/upload.json | python3 -c "import sys,json;print('  uploaded:', json.load(sys.stdin)['content']['path'])"
+	@python3 scripts/release-upload.py $(VERSION) $(RELEASE_DIR) $(GITHUB_API) $(GITHUB_REPO)
 	@git tag -a $(VERSION) -m "$(VERSION)"
 	@git push origin $(VERSION)
 	@echo "✓ release $(VERSION) binary uploaded + tag pushed"
