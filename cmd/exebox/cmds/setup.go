@@ -96,10 +96,11 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	}
 
 	// 1. discover identity
-	out.Step("discovering VM identity")
+	s := out.Spinner("discovering VM identity")
 	rc := reflection.New()
 	id, err := rc.Discover(ctx)
 	if err != nil {
+		s.Fail("reflection: %s", err)
 		return setupResult{report: report, ok: false, errMsg: "reflection: " + err.Error()}
 	}
 	if opts.vmName != "" {
@@ -107,7 +108,7 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	}
 	report.VM = id
 	step("reflection", "ok", fmt.Sprintf("%s port=%d cname=%s", id.Name, id.DefaultPort, id.CNAME()))
-	out.OK("VM %s (default port %d, cname %s)", id.Name, id.DefaultPort, id.CNAME())
+	s.OK("VM %s (default port %d, cname %s)", id.Name, id.DefaultPort, id.CNAME())
 
 	// Resolve the nginx port now that we know the reflection default port.
 	// Priority: --nginx-port flag > reflection default port > fallback 8000.
@@ -124,17 +125,19 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	}
 
 	// 2. install deps
-	out.Step("installing dependencies (node LTS, portless, nginx)")
+	s = out.Spinner("installing dependencies (node LTS, portless, nginx)")
 	nodeV, err := deps.InstallNode(ctx, false)
 	if err != nil {
+		s.Fail("node: %s", err)
 		step("node", "fail", err.Error())
 		return setupResult{report: report, ok: false, errMsg: "node: " + err.Error()}
 	}
 	report.NodeVersion = nodeV
 	step("node", cond(nodeV != "", "ok", "fail"), nodeV)
-	out.OK("node %s", nodeV)
+	s.OK("node %s", nodeV)
 
 	if err := deps.InstallPortless(ctx); err != nil {
+		out.Err("portless: %s", err)
 		step("portless bin", "fail", err.Error())
 		return setupResult{report: report, ok: false, errMsg: "portless: " + err.Error()}
 	}
@@ -142,6 +145,7 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	out.OK("portless installed")
 
 	if err := deps.InstallNginx(ctx); err != nil {
+		out.Err("nginx: %s", err)
 		step("nginx", "fail", err.Error())
 		return setupResult{report: report, ok: false, errMsg: "nginx: " + err.Error()}
 	}
@@ -149,37 +153,44 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	out.OK("nginx present")
 
 	// 3. portless daemon
-	out.Step("ensuring portless daemon on :%d (HTTP)", opts.portlessPort)
+	s = out.Spinner("ensuring portless daemon on :%d (HTTP)", opts.portlessPort)
 	if err := portless.EnsureDaemon(); err != nil {
+		s.Fail("portless daemon: %s", err)
 		step("portless daemon", "fail", err.Error())
 		return setupResult{report: report, ok: false, errMsg: "portless daemon: " + err.Error()}
 	}
 	step("portless daemon", "ok", "active")
-	out.OK("portless daemon active on :%d", opts.portlessPort)
+	s.OK("portless daemon active on :%d", opts.portlessPort)
 
 	// 4. nginx config: handle Caddy squatting on the port, write shim + base
-	out.Step("configuring nginx on :%d", opts.nginxPort)
+	s = out.Spinner("configuring nginx on :%d", opts.nginxPort)
 	if err := ensureNginxPortFree(opts.nginxPort, gflags.Yes); err != nil {
+		s.Fail("nginx port: %s", err)
 		step("nginx port", "fail", err.Error())
 		return setupResult{report: report, ok: false, errMsg: err.Error()}
 	}
 	if err := writeNginxConfigs(p, opts.nginxPort); err != nil {
+		s.Fail("nginx config: %s", err)
 		step("nginx config", "fail", err.Error())
 		return setupResult{report: report, ok: false, errMsg: "nginx config: " + err.Error()}
 	}
 	step("nginx config", "ok", p.Nginx)
-	out.OK("nginx config at %s", p.Nginx)
+	s.OK("nginx config at %s", p.Nginx)
 
 	// validate + enable + (re)start nginx
+	out.Step("validating + restarting nginx")
 	if out2, err := nginx.Test(); err != nil {
+		out.Err("nginx -t: %s", string(out2))
 		step("nginx -t", "fail", string(out2))
 		return setupResult{report: report, ok: false, errMsg: "nginx -t: " + string(out2)}
 	}
 	if out2, err := system.AsRoot("systemctl", "enable", "--now", "nginx").CombinedOutput(); err != nil {
+		out.Err("nginx enable: %s", string(out2))
 		step("nginx enable", "fail", string(out2))
 		return setupResult{report: report, ok: false, errMsg: "nginx enable: " + string(out2)}
 	}
 	if out2, err := system.AsRoot("systemctl", "restart", "nginx").CombinedOutput(); err != nil {
+		out.Err("nginx restart: %s", string(out2))
 		step("nginx restart", "fail", string(out2))
 		return setupResult{report: report, ok: false, errMsg: "nginx restart: " + string(out2)}
 	}
@@ -207,6 +218,18 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	}
 
 	out.OK("setup complete")
+
+	// Subtle next-step hint: domain registration.
+	// Only show if no API token is set yet (otherwise exebox new handles it
+	// automatically and there's nothing for the user to do).
+	if cfg.APIToken == "" {
+		out.Heading("next steps")
+		out.Info("wire a public domain to a project on this VM:")
+		out.Block("exebox new -d myapp.example.com --project myapp")
+		out.Info("to skip the manual domain registration step, set up an API token:")
+		out.Block("exebox set-token --help")
+	}
+
 	return setupResult{report: report, ok: true}
 }
 
