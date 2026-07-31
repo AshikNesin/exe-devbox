@@ -44,27 +44,32 @@ server {
 type ProjectSpec struct {
 	// Domains are the public FQDN(s) this block answers. More than one
 	// (e.g. devbox.nesin.io + devbox.ashiknesin.com) shares a backend.
-	Domains []string
-	Project string // route name -> <project>.localhost (only for backend=portless)
-	Backend string // "portless" or "loopback:<port>"
+	Domains       []string
+	Project       string // route name -> <project>.localhost (only for backend=portless)
+	Backend       string // "portless" or "loopback:<port>"
+	PortlessPort  int    // portless daemon port (for backend=portless); 0 = 8888
 }
 
 // ProjectConf renders a single <project>.conf server block.
-//   - portless: proxy_pass :8888 + rewrite Host to <project>.localhost
+//   - portless: proxy_pass :<portlessPort> + rewrite Host to <project>.localhost
 //   - loopback:<port>: proxy_pass 127.0.0.1:<port>, keep real Host
 //
 // Both carry WS upgrade headers so Vite HMR works through the chain.
 func ProjectConf(port int, s ProjectSpec) string {
+	portlessPort := s.PortlessPort
+	if portlessPort == 0 {
+		portlessPort = 8888
+	}
 	var upstream, hostHeader string
 	switch {
 	case s.Backend == "portless" || s.Backend == "":
-		upstream = "http://127.0.0.1:8888"
+		upstream = fmt.Sprintf("http://127.0.0.1:%d", portlessPort)
 		hostHeader = s.Project + ".localhost"
 	case strings.HasPrefix(s.Backend, "loopback:"):
 		upstream = "http://127.0.0.1:" + strings.TrimPrefix(s.Backend, "loopback:")
 		hostHeader = "$host"
 	default:
-		upstream = "http://127.0.0.1:8888"
+		upstream = fmt.Sprintf("http://127.0.0.1:%d", portlessPort)
 		hostHeader = s.Project + ".localhost"
 	}
 

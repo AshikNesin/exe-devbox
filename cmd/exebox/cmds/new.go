@@ -13,6 +13,7 @@ import (
 	"github.com/ashiknesin/exebox/internal/dns"
 	"github.com/ashiknesin/exebox/internal/nginx"
 	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exebox/internal/portless"
 	"github.com/ashiknesin/exebox/internal/reflection"
 	"github.com/ashiknesin/exebox/internal/system"
 	"github.com/spf13/cobra"
@@ -152,6 +153,10 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 	if nginxPort == 0 {
 		nginxPort = defaultNginxPort // fallback when reflection + config both lack a port
 	}
+	portlessPort := cfg.PortlessPort
+	if portlessPort == 0 {
+		portlessPort = portless.DaemonPort
+	}
 
 	report := newReport{
 		VM:      id,
@@ -235,7 +240,7 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 	// STEP E: nginx route (on-VM, automated).
 	out.Heading("nginx route")
 	confPath := p.ProjectConf(opts.project)
-	spec := nginx.ProjectSpec{Domains: opts.domains, Project: opts.project, Backend: opts.to}
+	spec := nginx.ProjectSpec{Domains: opts.domains, Project: opts.project, Backend: opts.to, PortlessPort: portlessPort}
 	conf := nginx.ProjectConf(nginxPort, spec)
 	if err := writeFile(confPath, conf, 0o644); err != nil {
 		return newResult{report: report, ok: false, errMsg: "write nginx conf: " + err.Error()}
