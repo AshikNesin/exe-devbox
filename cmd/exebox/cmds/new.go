@@ -215,14 +215,14 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 		}
 	}
 
-	// STEP D: exe.dev suggest links (owner-only).
+	// STEP D: exe.dev domain registration (owner-only).
+	// `domain add` is not a supported suggest command, so we point the user
+	// at https://exe.dev/shell with the exact command to paste.
 	out.Heading("exe.dev registration (owner key required)")
+	out.Info("open https://exe.dev/shell and run:")
 	for _, d := range opts.domains {
-		suggest, shell := domainAdd(id.Name, d)
-		report.SuggestLinks = append(report.SuggestLinks, suggestReport{Kind: "domain-add", Suggest: suggest, Shell: shell})
-		out.Info("register %s:", d)
-		out.Line("  " + suggest)
-		out.Info("(if the link isn't supported, run in the exe.dev shell:)")
+		shell := domainAdd(id.Name, d)
+		report.SuggestLinks = append(report.SuggestLinks, suggestReport{Kind: "domain-add", Shell: shell})
 		out.Block(shell)
 	}
 	if opts.public {

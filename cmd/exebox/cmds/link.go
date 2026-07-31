@@ -32,9 +32,11 @@ func suggestSetPublic(vm string) string {
 	return suggestLink(fmt.Sprintf("share set-public %s", vm))
 }
 
-// domainAdd is NOT reliably suggestable (not in the supported list), so we give
-// the user both: a suggest link (works if exe.dev added it) + the shell command.
-func domainAdd(vm, domain string) (suggest, shell string) {
-	cmd := fmt.Sprintf("domain add %s %s", vm, domain)
-	return suggestLink(cmd), shellCommand(cmd)
+// domainAdd registers a custom domain with exe.dev. `domain add` is NOT a
+// supported suggest command (only ls, resize, and share-* are), so there is no
+// suggest link — the user must run it at https://exe.dev/shell. Returns the
+// full ssh command and a deep link to the shell page.
+// Ref: https://exe.dev/docs/suggest-links.md
+func domainAdd(vm, domain string) (shell string) {
+	return shellCommand(fmt.Sprintf("domain add %s %s", vm, domain))
 }
