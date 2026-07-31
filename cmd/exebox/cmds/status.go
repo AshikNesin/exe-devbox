@@ -77,6 +77,9 @@ func runStatus(ctx context.Context, noProbe bool) (statusReport, bool) {
 	if r.NginxPort == 0 && r.VM != nil {
 		r.NginxPort = r.VM.DefaultPort
 	}
+	if r.NginxPort == 0 {
+		r.NginxPort = defaultNginxPort
+	}
 	if r.PortlessPort == 0 {
 		r.PortlessPort = portless.DaemonPort
 	}

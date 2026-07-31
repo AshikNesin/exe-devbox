@@ -150,7 +150,7 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 		nginxPort = id.DefaultPort
 	}
 	if nginxPort == 0 {
-		nginxPort = 8080
+		nginxPort = defaultNginxPort // fallback when reflection + config both lack a port
 	}
 
 	report := newReport{

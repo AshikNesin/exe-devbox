@@ -17,7 +17,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultNginxPort = 8080
+// defaultNginxPort is the last-resort fallback when neither --nginx-port nor
+// the reflection default port is available.
+const defaultNginxPort = 8000
 
 func newSetupCmd() *cobra.Command {
 	var vmName, nginxPortStr, portlessPortStr string
@@ -36,9 +38,9 @@ Steps:
   6. run doctor`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := setupOpts{
-				vmName:       vmName,
-				nginxPort:    parsePort(nginxPortStr, defaultNginxPort),
-				portlessPort: parsePort(portlessPortStr, portless.DaemonPort),
+				vmName:        vmName,
+				nginxPortStr:  nginxPortStr,
+				portlessPort:  parsePort(portlessPortStr, portless.DaemonPort),
 			}
 			res := runSetup(cmd.Context(), opts)
 			output.Global.Print(output.Result{OK: res.ok, Exit: exitCode(res.ok), Data: res.report, Message: res.errMsg})
@@ -49,15 +51,16 @@ Steps:
 		},
 	}
 	cmd.Flags().StringVar(&vmName, "vm", "", "VM name (default: auto-discovered from reflection)")
-	cmd.Flags().StringVar(&nginxPortStr, "nginx-port", "", "port for nginx to listen on (default 8080)")
+	cmd.Flags().StringVar(&nginxPortStr, "nginx-port", "", "port for nginx to listen on (default: reflection default port, or 8000)")
 	cmd.Flags().StringVar(&portlessPortStr, "portless-port", "", "port for the portless daemon (default 8888)")
 	return cmd
 }
 
 type setupOpts struct {
-	vmName       string
-	nginxPort    int
-	portlessPort int
+	vmName        string
+	nginxPortStr  string // raw --nginx-port flag; resolved after reflection
+	nginxPort     int    // resolved (flag > reflection default > fallback)
+	portlessPort  int
 }
 
 type setupReport struct {
@@ -87,7 +90,7 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	if err != nil {
 		return setupResult{ok: false, errMsg: err.Error()}
 	}
-	report := setupReport{NginxPort: opts.nginxPort, PortlessPort: opts.portlessPort}
+	report := setupReport{PortlessPort: opts.portlessPort}
 	step := func(name, status, detail string) {
 		report.Steps = append(report.Steps, setupStep{name, status, detail})
 	}
@@ -105,6 +108,12 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	report.VM = id
 	step("reflection", "ok", fmt.Sprintf("%s port=%d cname=%s", id.Name, id.DefaultPort, id.CNAME()))
 	out.OK("VM %s (default port %d, cname %s)", id.Name, id.DefaultPort, id.CNAME())
+
+	// Resolve the nginx port now that we know the reflection default port.
+	// Priority: --nginx-port flag > reflection default port > fallback 8000.
+	opts.nginxPort = resolveNginxPort(opts.nginxPortStr, id.DefaultPort)
+	report.NginxPort = opts.nginxPort
+	out.Info("nginx will listen on :%d", opts.nginxPort)
 
 	// ensure config dir
 	if err := p.EnsureDirs(); err != nil {
@@ -279,6 +288,20 @@ func writeNginxConfigs(p config.Paths, port int) error {
 }
 
 // --- small helpers ---
+
+// resolveNginxPort picks the nginx listen port. Priority:
+//  1. explicit flag (--nginx-port)
+//  2. reflection default port (the port exe.dev already routes here)
+//  3. fallback (defaultNginxPort)
+func resolveNginxPort(flag string, reflectionPort int) int {
+	if p := parsePort(flag, 0); p != 0 {
+		return p
+	}
+	if reflectionPort != 0 {
+		return reflectionPort
+	}
+	return defaultNginxPort
+}
 
 func parsePort(s string, def int) int {
 	if s == "" {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exebox/internal/portless"
 	"github.com/ashiknesin/exebox/internal/reflection"
 	"github.com/ashiknesin/exebox/internal/system"
 	"github.com/spf13/cobra"
@@ -16,7 +17,7 @@ func newDoctorCmd() *cobra.Command {
 		Short: "Run health checks (reflection, deps, services, ports)",
 		Long: `Run a battery of checks and print a ✓/✗ table: VM identity from
 reflection, binaries on PATH (node/npm/portless/nginx), systemd units,
-and whether :8080/:8888 are listening. Exits non-zero if any check fails.`,
+and whether the nginx/portless ports are listening. Exits non-zero if any check fails.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			report, ok := runDoctor(cmd.Context())
 			output.Global.Print(output.Result{
@@ -65,13 +66,21 @@ func runDoctor(ctx context.Context) (doctorReport, bool) {
 		report.Checks = append(report.Checks, system.UnitActive(u))
 	}
 
-	// 4. ports.
-	for _, port := range []int{8080, 8888} {
+	// 4. ports (nginx from config/reflection; portless is fixed at :8888).
+	cfg, _ := p.Load()
+	nginxPort := cfg.NginxPort
+	if nginxPort == 0 {
+		nginxPort = id.DefaultPort
+	}
+	if nginxPort == 0 {
+		nginxPort = defaultNginxPort
+	}
+	for _, port := range []int{nginxPort, portless.DaemonPort} {
 		report.Checks = append(report.Checks, system.PortListening(port))
 	}
 
 	// 5. reflection port vs configured nginx port.
-	if cfg, _ := p.Load(); cfg.NginxPort != 0 && id.DefaultPort != 0 {
+	if cfg.NginxPort != 0 && id.DefaultPort != 0 {
 		match := cfg.NginxPort == id.DefaultPort
 		report.Checks = append(report.Checks, system.Check{
 			Name:   "reflection port == nginx port",
