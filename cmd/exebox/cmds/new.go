@@ -182,15 +182,15 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 
 		switch {
 		case r.IsCloudflare() && cf != nil && cf.Available():
-			// direct API apply
+			// direct API apply (token mode or exe.dev proxy mode)
 			target := id.CNAME()
 			id2, created, err := cf.UpsertCNAME(ctx, r.Apex, d, target)
 			if err != nil {
 				return newResult{report: report, ok: false, errMsg: fmt.Sprintf("cloudflare %s: %s", d, err)}
 			}
 			rec.Action = ternary(created, "created", "updated")
-			rec.Detail = fmt.Sprintf("CNAME %s -> %s (id %s)", d, target, id2)
-			out.OK("CNAME %s %s -> %s", ternary(created, "created", "updated"), d, target)
+			rec.Detail = fmt.Sprintf("CNAME %s -> %s (id %s, via %s)", d, target, id2, cf.Mode())
+			out.OK("CNAME %s %s -> %s (via %s)", ternary(created, "created", "updated"), d, target, cf.Mode())
 		default:
 			// manual (also the fallback when no CF token)
 			rec.Action = "manual"

@@ -1,9 +1,13 @@
-// Package cloudflare applies the CNAME directly via the Cloudflare API when the
-// user provides a token (the PRD's "today-working fallback", since real
-// one-click Domain Connect needs a signed/onboarded template).
+// Package cloudflare applies the CNAME directly via the Cloudflare API when
+// credentials are available. Two sources, in priority order:
 //
-// Token source: $CLOUDFLARE_API_TOKEN (needs Zone.DNS Edit + Zone.Read on the
-// apex's zone). We never print the token.
+//   - $CLOUDFLARE_API_TOKEN (needs Zone.DNS Edit + Zone.Read on the apex's zone).
+//   - The exe.dev "cloudflare" integration: credentials are injected by a
+//     network-edge proxy whose base URL is discovered at runtime from the
+//     reflection endpoint's integration Help text, so no token is needed in
+//     the VM. We route API calls through that host and the proxy adds auth.
+//
+// We never print the token.
 package cloudflare
 
 import (
@@ -19,29 +23,70 @@ import (
 	"time"
 )
 
-const api = "https://api.cloudflare.com/client/v4"
-
-// Client calls the Cloudflare API with a bearer token.
+// directAPI is the public Cloudflare API (used in token mode).
+const directAPI = "https://api.cloudflare.com/client/v4"
+// Client calls the Cloudflare API. Exactly one of Token/Base is set:
+//   - Token+Base=directAPI: direct API with a bearer token.
+//   - Base=<discovered proxy URL> (no Token): exe.dev proxy injects auth.
 type Client struct {
-	Token string
+	Token string // empty when using the exe.dev proxy
+	Base  string // resolved API base URL (already includes /client/v4)
 	HTTP  *http.Client
 }
 
-// New returns a client from $CLOUDFLARE_API_TOKEN, or nil if unset.
+// New returns a direct-API client if $CLOUDFLARE_API_TOKEN is set, else a
+// proxy-mode client whose base URL is discovered at runtime from the exe.dev
+// reflection endpoint's "cloudflare" integration. If the token is unset and
+// the proxy base can't be discovered, Base is empty and Available() is false.
 func New() *Client {
-	t := strings.TrimSpace(os.Getenv("CLOUDFLARE_API_TOKEN"))
-	if t == "" {
-		return nil
+	hc := &http.Client{Timeout: 15 * time.Second}
+	if t := strings.TrimSpace(os.Getenv("CLOUDFLARE_API_TOKEN")); t != "" {
+		return &Client{Token: t, Base: directAPI, HTTP: hc}
 	}
-	return &Client{Token: t, HTTP: &http.Client{Timeout: 15 * time.Second}}
+	// proxy mode: discover the base URL from reflection. We don't fail here;
+	// callers check Available() before use, and Available() re-discovers if Base
+	// is still empty (covers the case where reflection wasn't ready at New()).
+	c := &Client{HTTP: hc}
+	if base, ok := proxyBase(); ok {
+		c.Base = base + "/client/v4"
+	}
+	return c
 }
 
-// Available reports whether a token is configured.
-func (c *Client) Available() bool { return c != nil && c.Token != "" }
+// Available reports whether this client can authenticate.
+//   - token mode: always true (a token is set).
+//   - proxy mode: true only if a proxy base URL could be discovered. If Base
+//     is still empty, we retry discovery once (covers reflection not being
+//     ready at New() time).
+func (c *Client) Available() bool {
+	if c == nil {
+		return false
+	}
+	if c.Token != "" {
+		return true
+	}
+	if c.Base != "" {
+		return true
+	}
+	// last-chance discovery
+	if base, ok := proxyBase(); ok {
+		c.Base = base + "/client/v4"
+		return true
+	}
+	return false
+}
+
+// Mode returns a human label for the active credential source ("token" or "proxy").
+func (c *Client) Mode() string {
+	if c != nil && c.Token != "" {
+		return "token"
+	}
+	return "proxy"
+}
 
 // zoneID finds the zone for an apex (e.g. nesin.io).
 func (c *Client) zoneID(ctx context.Context, apex string) (string, error) {
-	u := api + "/zones?name=" + url.QueryEscape(apex)
+	u := c.Base + "/zones?name=" + url.QueryEscape(apex)
 	var resp struct {
 		Result []struct {
 			ID   string `json:"id"`
@@ -68,7 +113,7 @@ func (c *Client) UpsertCNAME(ctx context.Context, apex, host, target string) (id
 	}
 
 	// Look for an existing record at this host (any type) to update.
-	listU := fmt.Sprintf("%s/zones/%s/dns_records?name=%s", api, zid, url.QueryEscape(host))
+	listU := fmt.Sprintf("%s/zones/%s/dns_records?name=%s", c.Base, zid, url.QueryEscape(host))
 	var existing struct {
 		Result []struct {
 			ID   string `json:"id"`
@@ -87,7 +132,7 @@ func (c *Client) UpsertCNAME(ctx context.Context, apex, host, target string) (id
 
 	for _, rec := range existing.Result {
 		// update in place (type may already be CNAME; we overwrite to be idempotent)
-		putU := fmt.Sprintf("%s/zones/%s/dns_records/%s", api, zid, rec.ID)
+		putU := fmt.Sprintf("%s/zones/%s/dns_records/%s", c.Base, zid, rec.ID)
 		var resp struct {
 			Success bool `json:"success"`
 			Errors  []struct{ Message string } `json:"errors"`
@@ -103,7 +148,7 @@ func (c *Client) UpsertCNAME(ctx context.Context, apex, host, target string) (id
 	}
 
 	// create
-	postU := fmt.Sprintf("%s/zones/%s/dns_records", api, zid)
+	postU := fmt.Sprintf("%s/zones/%s/dns_records", c.Base, zid)
 	var resp struct {
 		Success bool `json:"success"`
 		Errors  []struct{ Message string } `json:"errors"`
@@ -137,7 +182,11 @@ func (c *Client) do(ctx context.Context, u string, body any, dst any) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.Token)
+	// The exe.dev proxy injects auth for proxy-mode; only set the header in
+	// direct-token mode (setting it in proxy mode would be harmless but wrong).
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.HTTP.Do(req)
 	if err != nil {

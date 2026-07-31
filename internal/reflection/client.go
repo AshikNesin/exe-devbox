@@ -51,6 +51,34 @@ func New() *Client {
 	}
 }
 
+// Integration describes one entry from the reflection /integrations list.
+// The Help field often contains the proxy URL (e.g.
+// "Cloudflare API via https://cloudflare.int.exe.xyz/ ..."), which callers
+// parse to discover the credential-injected base URL.
+type Integration struct {
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+	Help    string `json:"help"`
+	Comment string `json:"comment"`
+}
+
+// Integration looks up an attached integration by name. Returns (nil, nil) if
+// the integration is not attached; an error only if reflection is unreachable.
+func (c *Client) Integration(ctx context.Context, name string) (*Integration, error) {
+	var resp struct {
+		Integrations []Integration `json:"integrations"`
+	}
+	if err := c.getJSON(ctx, "/integrations", &resp); err != nil {
+		return nil, err
+	}
+	for i := range resp.Integrations {
+		if resp.Integrations[i].Name == name {
+			return &resp.Integrations[i], nil
+		}
+	}
+	return nil, nil
+}
+
 // Discover fetches the full VM identity (name + email + default port).
 // All three endpoints must succeed; missing any is treated as an error since
 // exebox's whole UX assumes it knows the VM's name and port.
