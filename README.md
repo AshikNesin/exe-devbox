@@ -1,0 +1,139 @@
+# exebox
+
+A CLI that automates bringing up an [exe.dev](https://exe.dev) VM for multi-project development behind an **nginx + portless** reverse proxy. It wires per-project public subdomains to your VM, handles DNS, and fixes Vite HMR through the proxy — so a fresh VM goes from zero to serving real traffic in minutes.
+
+## What it does
+
+**1. One-time VM bring-up** — `exebox setup`
+
+- Installs Node.js (LTS), portless, and nginx
+- Starts the shared portless daemon on `:8888`
+- Writes nginx config under `~/.exebox/nginx` (the system nginx loads it via a one-time include shim)
+- Discovers the VM's name + default port from exe.dev reflection
+- Runs health checks (`exebox doctor`)
+
+**2. Per-project domain onboarding** — `exebox new`
+
+- Detects the DNS provider of the apex (Cloudflare / Domain Connect / manual)
+- Adds the `CNAME → <vm>.exe.xyz` (via Cloudflare API if you have a token, else prints exact manual instructions)
+- Emits the exe.dev suggest link to register the domain
+- Writes the nginx server block and reloads
+
+**3. HMR-aware dev launching** — `exebox dev`
+
+- Sets `VITE_HMR_URL` to the project's public domain so WebSocket HMR works through exe.dev + nginx
+- Kills leftover dev processes holding the `*.localhost` route name
+- Runs detached with logs to `~/.exebox/state/<project>-dev.log`
+
+## Install
+
+From source (requires Go 1.26+):
+
+```bash
+git clone https://github.com/ashiknesin/exebox.git
+cd exebox
+make install   # builds to ~/.local/bin/exebox + installs bash completion
+```
+
+## Quick start
+
+```bash
+# 1. Bring the VM up (idempotent — safe to re-run)
+exebox setup
+
+# 2. Wire a public domain to a project on this VM
+exebox new -d myapp.example.com --project myapp
+
+# 3. Launch the dev server with correct HMR env
+exebox dev myapp
+
+# 4. Check everything is live
+exebox status
+```
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `exebox setup` | Install deps, configure nginx, discover VM identity |
+| `exebox new -d <fqdn>` | Onboard a project domain (DNS + exe.dev + nginx route) |
+| `exebox dev [project]` | Launch a portless dev server with HMR env |
+| `exebox status` | Show VM identity, proxy state, domain liveness, portless routes |
+| `exebox doctor` | Run health checks (reflection, deps, services, ports) |
+| `exebox nginx` | Manage the exebox-managed nginx config (show/edit/reload) |
+
+### Global flags
+
+| Flag | Description |
+| --- | --- |
+| `--config <dir>` | Config dir (default `~/.exebox`) |
+| `--json` | Machine-readable JSON output |
+| `--yes` | Skip confirmation prompts |
+| `-v, --verbose` | Verbose output |
+
+## How it works
+
+```
+Browser ──HTTPS──▶ exe.dev proxy ──▶ nginx (:8080)
+                                      │  server_name routing
+                                      ▼
+                                 portless (:8888)
+                                      │  <project>.localhost
+                                      ▼
+                               project dev server
+```
+
+- **nginx** listens on the VM's default proxy port and routes by `Host` (each project gets its own `server` block).
+- **portless** is the local reverse proxy that maps `<project>.localhost` to whichever dev server registered that route.
+- **Custom domains** CNAME to `<vm>.exe.xyz` (which resolves), **not** `<vm>.exe.dev` (which doesn't).
+
+### Config directory
+
+```
+~/.exebox/
+├── config.json          # VM identity + ports (cached)
+├── nginx/conf.d/
+│   ├── 00-exebox-base.conf   # WS upgrade map + catch-all 404
+│   └── <project>.conf        # one server block per project
+├── bin/
+└── state/
+    ├── domains.json         # registered domains + projects
+    └── <project>-dev.log    # detached dev server logs
+```
+
+## DNS providers
+
+`exebox new` detects the apex's provider and acts accordingly:
+
+- **Cloudflare** — if `$CLOUDFLARE_API_TOKEN` is set (needs `Zone.DNS Edit` + `Zone.Read`), applies the CNAME directly via the API.
+- **Domain Connect** — detected via `TXT _domainconnect`; prints the apply link (requires template onboarding).
+- **Manual** — prints the exact CNAME record to add at your registrar.
+
+## Requirements
+
+- An [exe.dev](https://exe.dev) VM
+- Go 1.26+ (to build)
+- `sudo` (for nginx/portless install + the `/etc/nginx/conf.d/exebox.conf` include shim)
+
+## Project structure
+
+```
+cmd/exebox/          # CLI entrypoint + cobra command tree
+  main.go
+  cmds/              # one file per command
+internal/
+  cloudflare/        # Cloudflare API CNAME management
+  config/            # ~/.exebox paths + state files
+  deps/              # node/portless/nginx installers
+  dns/               # apex detection + provider classification
+  nginx/             # nginx config rendering + reload
+  output/            # colored/JSON output helpers
+  portless/          # portless daemon management
+  reflection/        # exe.dev VM identity discovery
+  system/            # OS probes + sudo wrapper
+docs/PRD.md          # product requirements + design notes
+```
+
+## License
+
+MIT
