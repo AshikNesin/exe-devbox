@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/ashiknesin/exebox/internal/output"
 	"github.com/ashiknesin/exebox/internal/portless"
 	"github.com/ashiknesin/exebox/internal/reflection"
+	"github.com/ashiknesin/exebox/internal/shell"
 	"github.com/ashiknesin/exebox/internal/system"
 	"github.com/spf13/cobra"
 )
@@ -38,11 +40,11 @@ Steps:
   6. run doctor`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := setupOpts{
-				vmName:        vmName,
-				nginxPortStr:  nginxPortStr,
-				portlessPort:  parsePort(portlessPortStr, portless.DaemonPort),
+				vmName:       vmName,
+				nginxPortStr: nginxPortStr,
+				portlessPort: parsePort(portlessPortStr, portless.DaemonPort),
 			}
-			res := runSetup(cmd.Context(), opts)
+			res := runSetup(cmd.Context(), opts, cmd.Root())
 			output.Global.Print(output.Result{OK: res.ok, Exit: exitCode(res.ok), Data: res.report, Message: res.errMsg})
 			if !res.ok {
 				return fmt.Errorf("setup did not complete: %s", res.errMsg)
@@ -84,7 +86,7 @@ type setupResult struct {
 	errMsg  string
 }
 
-func runSetup(ctx context.Context, opts setupOpts) setupResult {
+func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupResult {
 	out := output.Global
 	p, err := paths()
 	if err != nil {
@@ -218,6 +220,16 @@ func runSetup(ctx context.Context, opts setupOpts) setupResult {
 	}
 
 	out.OK("setup complete")
+
+	// Auto-install shell completion (bash or zsh, detected automatically).
+	if cr, err := shell.InstallCompletion(root); err != nil {
+		out.Warn("shell completion: %s", err)
+	} else if cr.AlreadyOK {
+		out.OK("shell completion ready (%s)", cr.Shell)
+	} else {
+		out.OK("shell completion installed (%s)", cr.Shell)
+		out.Info("open a new shell or: source ~/%s", filepath.Base(cr.RCFile))
+	}
 
 	// Subtle next-step hint: domain registration.
 	// Only show if no API token is set yet (otherwise exebox new handles it

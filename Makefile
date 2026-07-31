@@ -3,7 +3,6 @@
 
 BINARY   := exebox
 BIN_DIR  := $(HOME)/.local/bin
-DOTFILES := $(HOME)/dotfiles/bash/exebox-completion.bash
 PKG      := ./cmd/exebox
 VERSION  := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
@@ -15,21 +14,23 @@ build:
 	@echo "→ building $(BINARY) $(VERSION)"
 	go build -ldflags "-X main.Version=$(VERSION)" -o $(BINARY) $(PKG)
 
-# install: build to ~/.local/bin (already on PATH via ~/.bashrc) + refresh bash
-# completion into ~/dotfiles (sourced from ~/.bashrc). Re-run after adding cmds.
+# install: build to ~/.local/bin (already on PATH via ~/.bashrc) + auto-install
+# shell completion (detects bash/zsh). Re-run after adding cmds.
 install: build
 	@echo "→ installing to $(BIN_DIR)/$(BINARY)"
 	@mkdir -p $(BIN_DIR)
 	@cp $(BINARY) $(BIN_DIR)/$(BINARY)
-	@$(MAKE) --no-print-directory completion
+	@echo "→ auto-installing shell completion"
+	@mkdir -p $(HOME)/.local/share/exebox
+	@$(BIN_DIR)/$(BINARY) completion bash > $(HOME)/.local/share/exebox/completion.bash
+	@grep -q 'exebox/completion.bash' $(HOME)/.bashrc 2>/dev/null || \
+		printf '\n# exebox shell completion\n[ -f $$HOME/.local/share/exebox/completion.bash ] && source $$HOME/.local/share/exebox/completion.bash\n' >> $(HOME)/.bashrc
 	@echo "✓ installed. Open a new shell or: source ~/.bashrc"
 
-completion:
-	@echo "→ refreshing bash completion -> $(DOTFILES)"
-	@mkdir -p $(dir $(DOTFILES))
-	@if [ -x "$(BIN_DIR)/$(BINARY)" ]; then \
-		$(BIN_DIR)/$(BINARY) completion bash > $(DOTFILES); \
-	else ./$(BINARY) completion bash > $(DOTFILES); fi
+# completion: regenerate the completion script (for development use).
+# setup auto-installs completion; this is a manual refresh shortcut.
+completion: build
+	@$(MAKE) --no-print-directory install
 
 run: build
 	./$(BINARY) $(filter-out $@,$(MAKECMDGOALS))
