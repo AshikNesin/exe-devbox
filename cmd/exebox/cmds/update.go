@@ -39,7 +39,7 @@ func newUpdateCmd(version string) *cobra.Command {
 func runUpdate(cmd *cobra.Command, args []string) error {
 	checkOnly, _ := cmd.Flags().GetBool("check")
 
-	current := appVersion
+	current := strings.TrimPrefix(appVersion, "v")
 	if current == "" || current == "dev" {
 		output.Global.Warn("running a dev build (version unknown) — will attempt update anyway")
 	}
