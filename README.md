@@ -16,7 +16,7 @@ A CLI that automates bringing up an [exe.dev](https://exe.dev) VM for multi-proj
 
 - Detects the DNS provider of the apex (Cloudflare / Domain Connect / manual)
 - Adds the `CNAME → <vm>.exe.xyz` (via Cloudflare API automatically via the exe.dev proxy, or via `$CLOUDFLARE_API_TOKEN`, else prints manual instructions)
-- Registers the domain with exe.dev (automatically via `$EXE_API_TOKEN`, else prints the command to run)
+- Registers the domain with exe.dev (automatically if an API token is set, else prints the command to run)
 - Writes the nginx server block and reloads
 
 **3. HMR-aware dev launching** — `exebox dev`
@@ -61,6 +61,7 @@ exebox status
 | `exebox status` | Show VM identity, proxy state, domain liveness, portless routes |
 | `exebox doctor` | Run health checks (reflection, deps, services, ports) |
 | `exebox nginx` | Manage the exebox-managed nginx config (show/edit/reload) |
+| `exebox set-token` | Store an exe.dev API token for auto domain registration |
 
 ### Global flags
 
@@ -113,23 +114,21 @@ Browser ──HTTPS──▶ exe.dev proxy ──▶ nginx (:8080)
 
 `exebox new` registers each domain with exe.dev (the `domain add` step). Two modes:
 
-- **Automatic** — set `$EXE_API_TOKEN` to a scoped exe.dev HTTPS API token and exebox calls `domain add` directly. Create a token scoped to just `domain add`:
+- **Automatic** — store a scoped exe.dev API token and exebox calls `domain add` directly. Setup is two steps:
 
+  **On your local machine** (where `ssh exe.dev` works), generate a token scoped to **only** `domain add`:
   ```bash
-  ssh-keygen -t ed25519 -C api -f ~/.ssh/exe_dev_api
-  cat ~/.ssh/exe_dev_api.pub | ssh exe.dev ssh-key add
-
-  b64url() { tr -d '\n=' | tr '+/' '-_'; }
-  export PERMISSIONS='{"cmds":["domain add"],"exp":4102444800}'
-  export PAYLOAD=$(printf '%s' "$PERMISSIONS" | base64 | b64url)
-  export SIG=$(printf '%s' "$PERMISSIONS" | ssh-keygen -Y sign -f ~/.ssh/exe_dev_api -n v0@exe.dev)
-  export SIGBLOB=$(echo "$SIG" | sed '1d;$d' | b64url)
-  export EXE_API_TOKEN="exe0.$PAYLOAD.$SIGBLOB"
+  ssh exe.dev ssh-key generate-api-key --cmds="domain add" --exp=never --label=exebox
   ```
 
-  Test: `exebox new -d app.example.com` — the domain is registered automatically.
+  **On the VM**, store it:
+  ```bash
+  exebox set-token exe0.eyJjbW...paste-token-here...
+  ```
 
-- **Manual** — without `$EXE_API_TOKEN`, exebox prints the exact `ssh exe.dev domain add …` command to paste at [https://exe.dev/shell](https://exe.dev/shell).
+  Now `exebox new -d app.example.com` registers the domain automatically — zero manual steps.
+
+- **Manual** — without a token, exebox prints the exact `ssh exe.dev domain add …` command to paste at [https://exe.dev/shell](https://exe.dev/shell).
 
 ## Requirements
 

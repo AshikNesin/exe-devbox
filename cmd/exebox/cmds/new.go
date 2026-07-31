@@ -226,7 +226,7 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 	// automatically via the HTTPS API. Otherwise we fall back to manual:
 	// printing the shell command to paste at https://exe.dev/shell.
 	out.Heading("exe.dev registration")
-	api := exeapi.New()
+	api := exeapi.New(cfg.APIToken)
 	for _, d := range opts.domains {
 		shell := domainAdd(id.Name, d)
 		report.SuggestLinks = append(report.SuggestLinks, suggestReport{Kind: "domain-add", Shell: shell})

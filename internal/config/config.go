@@ -117,6 +117,7 @@ type File struct {
 	NginxPort     int    `json:"nginx_port,omitempty"`
 	PortlessPort  int    `json:"portless_port,omitempty"`
 	CNAMETarget   string `json:"cname_target,omitempty"`
+	APIToken      string `json:"api_token,omitempty"` // exe.dev HTTPS API token (scoped to domain add)
 	NginxPortFromReflection bool `json:"-"` // not persisted; runtime hint
 }
 

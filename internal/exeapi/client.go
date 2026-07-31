@@ -2,8 +2,12 @@
 // It's the same as running `ssh exe.dev <cmd>` but auth'd via a bearer token,
 // so exebox can automate lobby commands like `domain add` without SSH access.
 //
-// Token source: $EXE_API_TOKEN. Create one scoped to just the commands you
-// need (e.g. domain add) — see https://exe.dev/docs/https-api-local-key.md
+// Token source (checked in order):
+//   - config.json "api_token" field (set via exebox config set-token)
+//   - $EXE_API_TOKEN env var
+//
+// Create one scoped to just the commands you need (e.g. domain add) — see
+// https://exe.dev/docs/https-api.md
 package exeapi
 
 import (
@@ -11,7 +15,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -25,13 +28,15 @@ type Client struct {
 	HTTP  *http.Client
 }
 
-// New returns a client from $EXE_API_TOKEN, or nil if unset.
-func New() *Client {
-	t := strings.TrimSpace(os.Getenv("EXE_API_TOKEN"))
-	if t == "" {
+// New returns a client if a token is available, or nil otherwise. It reads the
+// token from the given string (typically from config.json), falling back to
+// the $EXE_API_TOKEN env var.
+func New(tokenFromConfig string) *Client {
+	tok := strings.TrimSpace(tokenFromConfig)
+	if tok == "" {
 		return nil
 	}
-	return &Client{Token: t, HTTP: &http.Client{Timeout: 30 * time.Second}}
+	return &Client{Token: tok, HTTP: &http.Client{Timeout: 30 * time.Second}}
 }
 
 // Available reports whether a token is configured.
