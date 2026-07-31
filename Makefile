@@ -48,9 +48,10 @@ clean:
 
 # release: build cross-compiled binaries, tag, and upload to GitHub releases.
 # Usage: make release VERSION=v0.2.0
-# Requires: push access to origin + GitHub API reachable via proxy.
 VERSION ?= 
 RELEASE_DIR := release-build
+GITHUB_API ?= https://api.github.com
+GITHUB_REPO ?= AshikNesin/exebox
 
 release:
 	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=v0.2.0"; exit 1; fi
@@ -68,10 +69,10 @@ payload = json.dumps({'message': 'Add exebox ' + v + ' binary', 'content': b64})
 open('$(RELEASE_DIR)/upload.json', 'w').write(payload) \
 "
 	@curl -sf -X PUT \
-	  "https://github.int.exe.xyz/api/v3/repos/AshikNesin/exebox/contents/releases/$(VERSION)/exebox-linux-amd64" \
+	  "$(GITHUB_API)/repos/$(GITHUB_REPO)/contents/releases/$(VERSION)/exebox-linux-amd64" \
 	  -H 'Content-Type: application/json' \
 	  -d @$(RELEASE_DIR)/upload.json | python3 -c "import sys,json;print('  uploaded:', json.load(sys.stdin)['content']['path'])"
 	@git tag -a $(VERSION) -m "$(VERSION)"
 	@git push origin $(VERSION)
 	@echo "✓ release $(VERSION) binary uploaded + tag pushed"
-	@echo "  download: https://github.int.exe.xyz/AshikNesin/exebox/raw/main/releases/$(VERSION)/exebox-linux-amd64"
+	@echo "  download: https://github.com/$(GITHUB_REPO)/raw/main/releases/$(VERSION)/exebox-linux-amd64"

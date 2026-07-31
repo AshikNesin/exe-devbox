@@ -30,16 +30,13 @@ A CLI that automates bringing up an [exe.dev](https://exe.dev) VM for multi-proj
 **From release binary** (recommended — no Go needed):
 
 ```bash
-curl -sfL -H 'Accept: application/vnd.github.raw' \
-  -o /tmp/exebox-install.sh \
-  https://github.int.exe.xyz/api/v3/repos/AshikNesin/exebox/contents/install.sh \
-  && bash /tmp/exebox-install.sh
+curl -sfL https://raw.githubusercontent.com/AshikNesin/exebox/main/install.sh | bash
 ```
 
 **From source** (requires Go 1.26+):
 
 ```bash
-git clone https://github.int.exe.xyz/AshikNesin/exebox.git
+git clone https://github.com/AshikNesin/exebox.git
 cd exebox
 make install   # builds to ~/.local/bin/exebox + installs bash completion
 ```
