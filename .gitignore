@@ -1,3 +1,5 @@
 /dist/
 /exebox
 *.test
+/exebox-v*
+/release-build/
