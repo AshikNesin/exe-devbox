@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ashiknesin/exebox/internal/notify"
 	"github.com/ashiknesin/exebox/internal/output"
 	"github.com/ashiknesin/exebox/internal/portless"
 	"github.com/spf13/cobra"
@@ -189,6 +191,20 @@ func runDev(o devOpts) devResult {
 	out.Info("HMR target: wss://%s:443", hmrHost)
 	out.Info("log: %s", logPath)
 	out.Info("wait ~15-20s, then: exebox status")
+
+	// Push notification: dev server is up (fire-and-forget, with a grace
+	// period so the server has time to bind).
+	go func() {
+		n := notify.Default()
+		if !n.Available() {
+			return
+		}
+		time.Sleep(10 * time.Second)
+		url := fmt.Sprintf("https://%s/", hmrHost)
+		msg := fmt.Sprintf("%s dev server is up on %s", o.project, hmrHost)
+		_ = n.SendWithURL(context.Background(), "🚀 Dev server up", msg, url)
+	}()
+
 	return devResult{ok: true}
 }
 

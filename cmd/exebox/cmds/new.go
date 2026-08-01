@@ -13,6 +13,7 @@ import (
 	"github.com/ashiknesin/exebox/internal/dns"
 	"github.com/ashiknesin/exebox/internal/exeapi"
 	"github.com/ashiknesin/exebox/internal/nginx"
+	"github.com/ashiknesin/exebox/internal/notify"
 	"github.com/ashiknesin/exebox/internal/output"
 	"github.com/ashiknesin/exebox/internal/portless"
 	"github.com/ashiknesin/exebox/internal/reflection"
@@ -293,6 +294,16 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 	// local sanity command
 	out.Heading("verify (on-VM)")
 	out.Block(fmt.Sprintf("curl -s -H \"Host: %s\" http://127.0.0.1:%d/ | head", opts.domains[0], nginxPort))
+
+	// Push notification: domain wired up.
+	n := notify.Default()
+	if n.Available() {
+		url := fmt.Sprintf("https://%s/", opts.domains[0])
+		msg := fmt.Sprintf("%s -> %s on %s", strings.Join(opts.domains, ", "), opts.project, id.Name)
+		if err := n.SendWithURL(ctx, "🌐 Domain added", msg, url); err != nil {
+			out.Warn("notify: %s", err)
+		}
+	}
 
 	_ = system.Run // keep import
 	return newResult{report: report, ok: true}

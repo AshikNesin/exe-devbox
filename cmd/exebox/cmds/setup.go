@@ -11,6 +11,7 @@ import (
 	"github.com/ashiknesin/exebox/internal/config"
 	"github.com/ashiknesin/exebox/internal/deps"
 	"github.com/ashiknesin/exebox/internal/nginx"
+	"github.com/ashiknesin/exebox/internal/notify"
 	"github.com/ashiknesin/exebox/internal/output"
 	"github.com/ashiknesin/exebox/internal/portless"
 	"github.com/ashiknesin/exebox/internal/reflection"
@@ -229,6 +230,12 @@ func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupRes
 	}
 
 	out.OK("setup complete")
+
+	// Push notification: VM is set up and ready.
+	n := notify.Default()
+	if n.Available() {
+		_ = n.Send(ctx, "✅ Setup complete", fmt.Sprintf("%s is ready on port %d", id.Name, opts.nginxPort))
+	}
 
 	// Auto-install shell completion (bash or zsh, detected automatically).
 	if cr, err := shell.InstallCompletion(root); err != nil {
