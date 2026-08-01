@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.7] - 2025-08-01
+
+### Added
+- `exebox add` is now an alias for `exebox new`.
+
 ## [v0.5.6] - 2025-08-01
 
 ### Added
