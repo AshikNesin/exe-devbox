@@ -188,6 +188,7 @@ func runDev(o devOpts) devResult {
 	_ = devCmd.Process.Release()
 
 	out.OK("%s dev started (pid %d, runner=%s)", o.project, devCmd.Process.Pid, runner)
+	out.Info("public URL: https://%s/", hmrHost)
 	out.Info("HMR target: wss://%s:443", hmrHost)
 	out.Info("log: %s", logPath)
 	out.Info("wait ~15-20s, then: exebox status")
