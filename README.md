@@ -153,11 +153,15 @@ internal/
   config/            # ~/.exebox paths + state files
   deps/              # node/portless/nginx installers
   dns/               # apex detection + provider classification
+  exeapi/            # exe.dev HTTPS API (domain add)
   nginx/             # nginx config rendering + reload
+  notify/            # push notifications via exe.dev notify integration
   output/            # colored/JSON output helpers
   portless/          # portless daemon management
   reflection/        # exe.dev VM identity discovery
   system/            # OS probes + sudo wrapper
+.github/workflows/   # CI: release.yml builds + publishes on tag push
+CHANGELOG.md         # release notes (Keep a Changelog format)
 docs/PRD.md          # product requirements + design notes
 ```
 

@@ -47,23 +47,14 @@ fmt:
 clean:
 	rm -f $(BINARY)
 
-# release: build cross-compiled binaries, tag, and upload to GitHub releases.
-# Usage: make release VERSION=v0.2.0
+# release: tag and push — CI (.github/workflows/release.yml) builds and publishes.
+# Usage: make release VERSION=v0.4.0
 VERSION ?= 
-RELEASE_DIR := release-build
-GITHUB_API ?= https://github.int.exe.xyz/api/v3
-GITHUB_REPO ?= AshikNesin/exebox
 
-release: scripts/release-upload.py
 release:
-	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=v0.2.0"; exit 1; fi
-	@echo "→ building $(VERSION)"
-	@mkdir -p $(RELEASE_DIR)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Version=$(VERSION)" -o $(RELEASE_DIR)/exebox-$(VERSION)-linux-amd64 $(PKG)
-	@chmod +x $(RELEASE_DIR)/exebox-$(VERSION)-linux-amd64
-	@echo "→ uploading binary to releases/$(VERSION)/ via Contents API"
-	@python3 scripts/release-upload.py $(VERSION) $(RELEASE_DIR) $(GITHUB_API) $(GITHUB_REPO)
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=v0.4.0"; exit 1; fi
+	@echo "→ tagging $(VERSION) (CI will build + publish)"
 	@git tag -a $(VERSION) -m "$(VERSION)"
 	@git push origin $(VERSION)
-	@echo "✓ release $(VERSION) binary uploaded + tag pushed"
-	@echo "  download: https://raw.githubusercontent.com/$(GITHUB_REPO)/releases/releases/$(VERSION)/exebox-linux-amd64"
+	@echo "✓ tag pushed — watch CI: https://github.com/AshikNesin/exebox/actions"
+	@echo "  release will appear at: https://github.com/AshikNesin/exebox/releases/tag/$(VERSION)"

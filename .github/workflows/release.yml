@@ -1,0 +1,44 @@
+# Release workflow: builds a cross-compiled binary and publishes it as a
+# GitHub Release asset whenever a tag matching v*.*.* is pushed.
+#
+# Usage:
+#   git tag v0.4.0 && git push origin v0.4.0
+#   (or: make release VERSION=v0.4.0  # if you want to skip the local build)
+#
+# This replaces the old Contents-API-to-releases-branch approach. GitHub
+# Actions has direct access to uploads.github.com so we get proper release
+# assets with checksums and download counts.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -ldflags "-s -w -X main.Version=$VERSION" \
+            -o exebox-linux-amd64 ./cmd/exebox
+          chmod +x exebox-linux-amd64
+
+      - name: Create release and upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: exebox-linux-amd64
+          generate_release_notes: true
+          body_path: CHANGELOG.md

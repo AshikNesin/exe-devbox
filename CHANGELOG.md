@@ -1,0 +1,48 @@
+# Changelog
+
+All notable changes to exebox are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+### Changed
+- Release process is now handled by a GitHub Actions workflow (`.github/workflows/release.yml`). Push a `v*.*.*` tag and CI builds + publishes the binary as a proper GitHub Release asset.
+
+## [v0.3.0] - 2025-08-01
+
+### Added
+- Push notifications via the exe.dev notify integration — get a device notification when a domain is added, a dev server starts, or setup completes. Automatically detected; silent no-op if the integration isn't attached.
+
+### Removed
+- Domain Connect dead code — the detection logic (`TXT _domainconnect` lookup), `ProviderDomainConnect`, `DCAPI` field, and helper functions were never functional (required provider template onboarding) and have been removed. DNS provider detection is now Cloudflare or manual.
+- Dead code: `dns.Record` type, `system.Run`/`RunBash`/`NeedRoot`, `config.File.NginxPortFromReflection`, `output.Mode.Plain`/`Yellow`, and the `_ = system.Run` import hack.
+- 14MB of compiled binaries committed to git (`releases/v0.1.0/`, `releases/v0.2.0/`).
+
+### Changed
+- Release binaries now live on a dedicated `releases` branch instead of `main`, keeping the main tree clean.
+- PRD milestones updated to reflect shipped status.
+
+## [v0.2.0] - 2025-07-31
+
+### Added
+- `exebox update` command for self-updating to the latest GitHub release.
+- Shell completion auto-installation during `exebox setup`.
+- Spinner output for long-running setup steps.
+- `exebox set-token` to store an exe.dev API token for auto domain registration.
+- exe.dev HTTPS API integration (`internal/exeapi`) — calls `domain add` directly with a scoped token.
+
+### Changed
+- Config directory renamed from `~/.exe-devbox` to `~/.exebox` (auto-migrated).
+- Caddy-to-nginx handoff during setup (stops/disables Caddy if squatting on the port).
+
+## [v0.1.0] - 2025-07-30
+
+### Added
+- Initial release.
+- `exebox setup` — installs node, portless, nginx; configures the reverse proxy stack.
+- `exebox new` — onboards a project domain (DNS detection, CNAME strategy, exe.dev registration, nginx route).
+- `exebox dev` — launches a dev server with HMR-aware env (`VITE_HMR_URL`).
+- `exebox status` — shows VM identity, proxy state, domain liveness.
+- `exebox doctor` — health checks (reflection, deps, services, ports).
+- `--json` machine-readable output for all commands.
