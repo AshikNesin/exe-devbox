@@ -77,6 +77,11 @@ func runDev(o devOpts) devResult {
 	if err != nil {
 		return devResult{false, err.Error()}
 	}
+	// Infer project from cwd: walk up to find the nearest package.json and
+	// use its directory name as the project name.
+	if o.project == "" {
+		o.project = inferProjectFromCWD()
+	}
 	if o.project == "" {
 		// default to the sole portless project if unambiguous
 		domains, _ := p.LoadDomains()
@@ -208,6 +213,31 @@ func runDev(o devOpts) devResult {
 	}()
 
 	return devResult{ok: true}
+}
+
+// inferProjectFromCWD returns the directory name of the nearest ancestor
+// containing a package.json — used as the portless project name. Returns ""
+// if no package.json is found (walks up to the home dir).
+func inferProjectFromCWD() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	for dir := cwd; dir != "/" && dir != home && strings.HasPrefix(dir, home); {
+		if _, err := os.Stat(filepath.Join(dir, "package.json")); err == nil {
+			return filepath.Base(dir)
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return ""
 }
 
 // lookupProjectDomain returns the first public domain + backend for a project
