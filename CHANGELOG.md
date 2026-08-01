@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- `exebox new` now retries exe.dev domain registration on transient failures (DNS propagation) every 5s for up to 1 minute before failing. Auth/permission errors (401/403) fail immediately without retrying.
+
 ## [v0.5.1] - 2025-08-01
 
 ### Fixed

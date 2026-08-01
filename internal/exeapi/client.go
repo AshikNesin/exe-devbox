@@ -12,12 +12,43 @@ package exeapi
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 )
+
+// Error is a typed error wrapping a non-OK HTTP response from the exec API.
+// It lets callers distinguish auth/permanent failures from transient ones
+// (e.g. DNS propagation) that are worth retrying.
+type Error struct {
+	Status int
+	Body   string
+}
+
+func (e *Error) Error() string {
+	switch e.Status {
+	case http.StatusUnauthorized:
+		return "api token invalid or expired (status 401)"
+	case http.StatusForbidden:
+		return fmt.Sprintf("api token lacks permission (status 403): %s", e.Body)
+	default:
+		return fmt.Sprintf("exe.dev exec failed (status %d): %s", e.Status, e.Body)
+	}
+}
+
+// Retryable reports whether an error is worth retrying. Auth failures
+// (401/403) are permanent; everything else (DNS propagation, 5xx, network
+// blips) is treated as transient.
+func Retryable(err error) bool {
+	var ae *Error
+	if errors.As(err, &ae) {
+		return ae.Status != http.StatusUnauthorized && ae.Status != http.StatusForbidden
+	}
+	return true // network errors etc.
+}
 
 // execEndpoint is the exe.dev HTTPS API.
 const execEndpoint = "https://exe.dev/exec"
@@ -59,13 +90,8 @@ func (c *Client) Exec(cmd string) (string, error) {
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
 	out := strings.TrimSpace(string(body))
-	switch {
-	case resp.StatusCode == http.StatusForbidden:
-		return out, fmt.Errorf("api token lacks permission for %q (status 403)", cmd)
-	case resp.StatusCode == http.StatusUnauthorized:
-		return out, fmt.Errorf("api token invalid or expired (status 401)")
-	case resp.StatusCode >= 400:
-		return out, fmt.Errorf("exe.dev exec failed (status %d): %s", resp.StatusCode, out)
+	if resp.StatusCode >= 400 {
+		return out, &Error{Status: resp.StatusCode, Body: out}
 	}
 	return out, nil
 }

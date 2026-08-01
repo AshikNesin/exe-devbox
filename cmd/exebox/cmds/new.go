@@ -275,7 +275,7 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 		report.SuggestLinks = append(report.SuggestLinks, suggestReport{Kind: "domain-add", Shell: shell})
 		if api != nil && api.Available() {
 			out.Step("registering %s via exe.dev API ...", d)
-			resp, err := api.DomainAdd(id.Name, d)
+			resp, err := domainAddRetry(ctx, api, id.Name, d)
 			if err != nil {
 				out.Warn("API registration failed: %s", err)
 				out.Info("fall back — open https://exe.dev/shell and run:")
@@ -474,6 +474,42 @@ func ternary(b bool, t, f string) string {
 		return t
 	}
 	return f
+}
+
+// domainAddRetry registers a domain via the exe.dev API, retrying on transient
+// failures (DNS propagation) with a 5s delay up to 1 minute. Permanent errors
+// (bad token, permission denied) are returned immediately without retrying.
+func domainAddRetry(ctx context.Context, api *exeapi.Client, vm, domain string) (string, error) {
+	const (
+		interval = 5 * time.Second
+		maxWait  = 1 * time.Minute
+	)
+	deadline := time.Now().Add(maxWait)
+	var lastErr error
+	for attempt := 1; ; attempt++ {
+		resp, err := api.DomainAdd(vm, domain)
+		if err == nil {
+			return resp, nil
+		}
+		lastErr = err
+		if !exeapi.Retryable(err) {
+			return "", err // auth/permission — don't retry
+		}
+		if !time.Now().Before(deadline) {
+			return "", fmt.Errorf("domain add failed after %s: %w", maxWait, lastErr)
+		}
+		out := output.Global
+		if attempt == 1 {
+			out.Step("waiting for DNS to propagate, retrying in %s ...", interval)
+		} else {
+			out.Info("retry %d in %s (%s elapsed) ...", attempt, interval, time.Until(deadline).Truncate(time.Second))
+		}
+		select {
+		case <-time.After(interval):
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
+	}
 }
 
 // waitCNAME polls until domain resolves (via CNAME chain) to target.
