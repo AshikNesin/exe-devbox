@@ -6,8 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.4.0] - 2025-08-01
+
+### Added
+- `CHANGELOG.md` following the [Keep a Changelog](https://keepachangelog.com/) format.
+- GitHub Actions release workflow (`.github/workflows/release.yml`) — push a `v*.*.*` tag and CI builds + publishes a GitHub Release with the binary as an asset.
+
 ### Changed
-- Release process is now handled by a GitHub Actions workflow (`.github/workflows/release.yml`). Push a `v*.*.*` tag and CI builds + publishes the binary as a proper GitHub Release asset.
+- `make release` now just tags + pushes; CI handles building and publishing.
+- Download URLs (install.sh, `exebox update`) now use standard GitHub Release asset URLs.
+
+### Removed
+- `scripts/release-upload.py` — the Contents API upload script is replaced by CI.
+- `releases` branch approach — binaries are now proper release assets, not committed to a branch.
 
 ## [v0.3.0] - 2025-08-01
 
