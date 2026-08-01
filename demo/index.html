@@ -3,22 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>exebox — Interactive Demo</title>
+<title>exebox — From zero VM to serving traffic in minutes</title>
 <style>
 :root {
-  --bg: #0a0e14;
-  --bg-2: #0f1419;
-  --panel: #11161d;
-  --border: #1f2733;
-  --accent: #39bae6;
-  --accent-2: #59c2ff;
-  --green: #aad94c;
-  --yellow: #ffb454;
-  --orange: #f26d3a;
-  --purple: #d2a6ff;
-  --red: #e26d6d;
-  --text: #c7ccd1;
-  --dim: #5c6773;
+  --bg: #ffffff;
+  --bg-soft: #f6f8fa;
+  --bg-term: #f6f8fa;
+  --border: #e1e4e8;
+  --border-soft: #eaecef;
+  --accent: #0969da;
+  --accent-soft: #ddf4ff;
+  --green: #1a7f37;
+  --green-soft: #dafbe1;
+  --yellow: #9a6700;
+  --yellow-soft: #fff8c5;
+  --orange: #bc4c00;
+  --purple: #8250df;
+  --red: #cf222e;
+  --text: #1f2328;
+  --text-2: #59636e;
+  --dim: #8c959f;
   --mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
@@ -28,8 +32,9 @@ body {
   font-family: var(--sans);
   background: var(--bg);
   color: var(--text);
-  line-height: 1.6;
+  line-height: 1.65;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ── Nav ── */
@@ -37,84 +42,82 @@ nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 32px;
-  background: rgba(10,14,20,.82);
+  background: rgba(255,255,255,.85);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-soft);
 }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: #fff; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: var(--text); text-decoration: none; }
 .brand-icon {
   width: 28px; height: 28px; border-radius: 7px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
-  display: grid; place-items: center; font-size: 15px; color: #0a0e14; font-weight: 900;
+  background: var(--accent);
+  display: grid; place-items: center; font-size: 15px; color: #fff; font-weight: 900;
 }
-.nav-links { display: flex; gap: 26px; }
-.nav-links a { color: var(--dim); text-decoration: none; font-size: 14px; transition: color .2s; }
+.nav-links { display: flex; gap: 26px; align-items: center; }
+.nav-links a { color: var(--text-2); text-decoration: none; font-size: 14px; transition: color .2s; }
 .nav-links a:hover { color: var(--accent); }
-@media(max-width:720px){ .nav-links{ display:none; } nav{ padding:12px 16px; } }
+.nav-gh {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 600;
+}
+.nav-gh:hover { border-color: var(--accent); color: var(--accent); }
+@media(max-width:720px){ .nav-links a:not(.nav-gh){ display:none; } nav{ padding:12px 16px; } }
+
+/* ── Container ── */
+.wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
 
 /* ── Hero ── */
 .hero {
-  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 100px 24px 60px; position: relative;
-}
-.hero::before {
-  content: ''; position: absolute; inset: 0; z-index: -1;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(57,186,230,.10), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(210,166,255,.08), transparent 40%);
+  padding: 140px 24px 80px; text-align: center;
+  position: relative;
 }
 .badge {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 6px 14px; border-radius: 100px; font-size: 13px;
-  background: rgba(57,186,230,.08); border: 1px solid rgba(57,186,230,.2); color: var(--accent);
+  padding: 5px 14px; border-radius: 100px; font-size: 13px; font-weight: 500;
+  background: var(--green-soft); border: 1px solid #b4e0bf; color: var(--green);
   margin-bottom: 28px;
 }
-.badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+.badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 h1 {
-  font-size: clamp(38px, 7vw, 76px); font-weight: 800; line-height: 1.05; letter-spacing: -.02em;
-  color: #fff; max-width: 900px;
+  font-size: clamp(34px, 6vw, 60px); font-weight: 800; line-height: 1.1; letter-spacing: -.025em;
+  color: var(--text); max-width: 800px; margin: 0 auto;
 }
 h1 .grad {
-  background: linear-gradient(120deg, var(--accent), var(--purple) 70%);
+  background: linear-gradient(120deg, var(--accent), var(--purple) 80%);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
-.hero p.sub { font-size: clamp(16px,2.4vw,21px); color: var(--dim); max-width: 600px; margin: 22px auto 0; }
-.hero-cta { display: flex; gap: 14px; margin-top: 36px; flex-wrap: wrap; justify-content: center; }
+.hero p.sub { font-size: clamp(16px,2.2vw,20px); color: var(--text-2); max-width: 580px; margin: 22px auto 0; }
+.hero-cta { display: flex; gap: 12px; margin-top: 36px; flex-wrap: wrap; justify-content: center; }
 .btn {
-  display: inline-flex; align-items: center; gap: 8px; padding: 13px 24px; border-radius: 10px;
-  font-weight: 600; font-size: 15px; cursor: pointer; border: none; text-decoration: none; transition: transform .15s, box-shadow .2s;
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 8px;
+  font-weight: 600; font-size: 15px; cursor: pointer; border: none; text-decoration: none; transition: transform .12s, box-shadow .2s;
 }
-.btn-primary { background: var(--accent); color: #0a0e14; }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(57,186,230,.3); }
-.btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(9,105,218,.25); }
+.btn-ghost { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-
-/* hero terminal preview */
-.hero-term {
-  margin-top: 56px; width: 100%; max-width: 680px;
-}
 
 /* ── Terminal ── */
 .term {
-  background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  background: var(--bg-term); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  text-align: left;
 }
 .term-bar {
-  display: flex; align-items: center; gap: 8px; padding: 11px 14px;
-  background: var(--panel); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  background: #eaeef2; border-bottom: 1px solid var(--border);
 }
 .term-dot { width: 12px; height: 12px; border-radius: 50%; }
 .term-dot.r { background: #ff5f57; } .term-dot.y { background: #febc2e; } .term-dot.g { background: #28c840; }
-.term-title { margin-left: 8px; font-family: var(--mono); font-size: 12px; color: var(--dim); }
+.term-title { margin-left: 8px; font-family: var(--mono); font-size: 12px; color: var(--text-2); }
 .term-body {
-  font-family: var(--mono); font-size: 13.5px; line-height: 1.75; padding: 18px 20px;
+  font-family: var(--mono); font-size: 13px; line-height: 1.8; padding: 18px 20px;
   min-height: 160px; max-height: 460px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
 }
 .term-body::-webkit-scrollbar { width: 7px; }
 .term-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 .prompt { color: var(--green); }
-.cmd { color: #fff; }
-.out { color: var(--text); }
+.cmd { color: var(--text); font-weight: 600; }
+.out { color: var(--text-2); }
 .dim { color: var(--dim); }
 .ok { color: var(--green); }
 .warn { color: var(--yellow); }
@@ -122,104 +125,169 @@ h1 .grad {
 .acc { color: var(--accent); }
 .pur { color: var(--purple); }
 .cursor {
-  display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: text-bottom;
+  display: inline-block; width: 7px; height: 14px; background: var(--accent); vertical-align: text-bottom;
   animation: blink 1s step-end infinite;
 }
 @keyframes blink { 50% { opacity: 0; } }
 
+.hero-term { margin: 56px auto 0; max-width: 660px; text-align: left; }
+
 /* ── Section ── */
-section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
-.section-tag { font-family: var(--mono); font-size: 13px; color: var(--accent); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px; }
-.section-title { font-size: clamp(28px,4.5vw,44px); font-weight: 800; color: #fff; letter-spacing: -.02em; margin-bottom: 14px; }
-.section-desc { color: var(--dim); font-size: 17px; max-width: 620px; margin-bottom: 48px; }
+section { padding: 70px 0; }
+.section-tag {
+  display: inline-block; font-family: var(--mono); font-size: 13px; font-weight: 600;
+  color: var(--accent); background: var(--accent-soft); padding: 3px 10px; border-radius: 6px;
+  margin-bottom: 14px;
+}
+.section-title { font-size: clamp(26px,4vw,38px); font-weight: 800; color: var(--text); letter-spacing: -.02em; margin-bottom: 14px; }
+.section-desc { color: var(--text-2); font-size: 17px; max-width: 620px; margin-bottom: 44px; }
+
+/* ── Problem ── */
+.problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media(max-width:780px){ .problem-grid{ grid-template-columns:1fr; } }
+.problem-card {
+  background: var(--bg-soft); border: 1px solid var(--border-soft); border-radius: 12px; padding: 28px;
+}
+.problem-card h3 { font-size: 17px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.problem-card .bad { color: var(--red); }
+.problem-card .good { color: var(--green); }
+.problem-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.problem-list li { display: flex; gap: 10px; font-size: 14.5px; color: var(--text-2); line-height: 1.5; }
+.problem-list .icon { flex-shrink: 0; font-weight: 700; }
 
 /* ── Walkthrough ── */
-.walk-grid { display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: start; }
+.walk-grid { display: grid; grid-template-columns: 280px 1fr; gap: 28px; align-items: start; }
 @media(max-width:860px){ .walk-grid{ grid-template-columns:1fr; } }
 .steps { display: flex; flex-direction: column; gap: 10px; }
 .step-btn {
-  text-align: left; padding: 16px 18px; border-radius: 10px; cursor: pointer;
-  background: var(--panel); border: 1px solid var(--border); color: var(--text);
-  transition: all .2s; position: relative;
+  text-align: left; padding: 15px 16px; border-radius: 10px; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  transition: all .15s; position: relative;
 }
-.step-btn:hover { border-color: rgba(57,186,230,.4); }
-.step-btn.active { border-color: var(--accent); background: rgba(57,186,230,.06); }
+.step-btn:hover { border-color: var(--accent); }
+.step-btn.active { border-color: var(--accent); background: var(--accent-soft); }
 .step-btn.active::before {
-  content: ''; position: absolute; left: 0; top: 16px; bottom: 16px; width: 3px; border-radius: 3px;
+  content: ''; position: absolute; left: -1px; top: 14px; bottom: 14px; width: 3px; border-radius: 3px;
   background: var(--accent);
 }
-.step-num { font-family: var(--mono); font-size: 12px; color: var(--accent); }
-.step-title { font-weight: 700; color: #fff; margin: 4px 0 4px; font-size: 16px; }
-.step-desc { font-size: 13px; color: var(--dim); }
+.step-num { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); }
+.step-title { font-weight: 700; color: var(--text); margin: 3px 0 3px; font-size: 15px; }
+.step-desc { font-size: 13px; color: var(--text-2); }
 
 /* ── Architecture ── */
-.arch-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 36px; overflow-x: auto; }
-.arch-flow { display: flex; align-items: stretch; gap: 0; min-width: 720px; }
+.arch-wrap {
+  background: var(--bg-soft); border: 1px solid var(--border-soft); border-radius: 14px; padding: 32px;
+  overflow-x: auto;
+}
+.arch-flow { display: flex; align-items: stretch; gap: 0; min-width: 700px; }
 .arch-node {
-  flex: 1; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px;
-  padding: 20px 16px; text-align: center; position: relative; min-height: 120px;
+  flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px 14px; text-align: center; position: relative; min-height: 110px;
   display: flex; flex-direction: column; justify-content: center;
 }
-.arch-node .icon { font-size: 26px; margin-bottom: 8px; }
-.arch-node .name { font-weight: 700; color: #fff; font-size: 14px; }
-.arch-node .meta { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 4px; }
-.arch-arrow { display: flex; align-items: center; justify-content: center; width: 50px; position: relative; }
-.arch-arrow .line { position: absolute; top: 50%; left: 6px; right: 6px; height: 2px; background: var(--border); }
-.arch-arrow .head { position: relative; z-index: 1; color: var(--accent); font-size: 18px; right: 14px; }
-.arch-arrow .label { position: absolute; top: 16px; font-family: var(--mono); font-size: 10px; color: var(--dim); white-space: nowrap; }
-
-/* ── Feature cards ── */
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-.card {
-  background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 26px;
-  transition: transform .2s, border-color .2s;
+.arch-node .icon { font-size: 24px; margin-bottom: 6px; }
+.arch-node .name { font-weight: 700; color: var(--text); font-size: 13px; }
+.arch-node .meta { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 3px; }
+.arch-arrow { display: flex; align-items: center; justify-content: center; width: 48px; position: relative; }
+.arch-arrow .line { position: absolute; top: 50%; left: 4px; right: 4px; height: 2px; background: var(--border); }
+.arch-arrow .head { position: relative; z-index: 1; color: var(--accent); font-size: 16px; right: 12px; }
+.arch-arrow .label { position: absolute; top: 12px; font-family: var(--mono); font-size: 10px; color: var(--dim); white-space: nowrap; }
+.packet {
+  position: absolute; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); top: calc(50% - 3.5px); left: 4px; opacity: 0;
 }
-.card:hover { transform: translateY(-4px); border-color: rgba(57,186,230,.3); }
-.card .emoji { font-size: 28px; margin-bottom: 14px; display: block; }
-.card h3 { color: #fff; font-size: 18px; margin-bottom: 8px; }
-.card p { color: var(--dim); font-size: 14.5px; }
+
+/* ── Features ── */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.card {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px;
+  transition: transform .15s, border-color .2s, box-shadow .2s;
+}
+.card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+.card .emoji { font-size: 26px; margin-bottom: 12px; display: block; }
+.card h3 { color: var(--text); font-size: 17px; margin-bottom: 7px; }
+.card p { color: var(--text-2); font-size: 14px; }
+
+/* ── Getting Started ── */
+.gs-code {
+  background: var(--bg-term); border: 1px solid var(--border); border-radius: 10px;
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.85;
+  overflow-x: auto;
+}
+.gs-code .line { display: block; padding: 1px 20px; white-space: pre; }
+.gs-code .line:first-child { padding-top: 16px; }
+.gs-code .line:last-child { padding-bottom: 16px; }
+.gs-code .cmt { color: var(--dim); }
+.gs-code .s { color: var(--green); }
+.gs-code .k { color: var(--accent); }
+.gs-code .str { color: var(--orange); }
+
+.gs-steps { display: flex; flex-direction: column; gap: 20px; margin-top: 32px; }
+.gs-step { display: flex; gap: 18px; }
+.gs-num {
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-weight: 700; font-size: 15px;
+  display: grid; place-items: center;
+}
+.gs-content { flex: 1; padding-top: 4px; }
+.gs-content h4 { font-size: 16px; margin-bottom: 6px; }
+.gs-content p { color: var(--text-2); font-size: 14.5px; margin-bottom: 10px; }
+
+/* ── Interactive Terminal ── */
+.chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.chip {
+  font-family: var(--mono); font-size: 13px; padding: 8px 13px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); cursor: pointer; transition: all .15s;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── Footer ── */
-footer { text-align: center; padding: 50px 24px; border-top: 1px solid var(--border); color: var(--dim); font-size: 14px; }
+footer { border-top: 1px solid var(--border-soft); padding: 50px 24px; text-align: center; }
+footer p { color: var(--text-2); font-size: 14px; margin-bottom: 8px; }
 footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
 
-.reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s, transform .6s; }
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s, transform .6s; }
 .reveal.in { opacity: 1; transform: none; }
 
-/* animated packet */
-.packet {
-  position: absolute; width: 8px; height: 8px; border-radius: 50%;
-  background: var(--accent); box-shadow: 0 0 10px var(--accent); top: calc(50% - 4px); left: 6px;
-  opacity: 0;
+.replay-btn {
+  margin-left: auto; background: none; border: 1px solid var(--border); color: var(--text-2);
+  border-radius: 6px; padding: 4px 10px; font-family: var(--mono); font-size: 11px; cursor: pointer;
 }
+.replay-btn:hover { border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="brand">
+  <a href="#" class="brand">
     <div class="brand-icon">📦</div>
     exebox
-  </div>
+  </a>
   <div class="nav-links">
+    <a href="#problem">Problem</a>
     <a href="#walkthrough">Walkthrough</a>
     <a href="#architecture">Architecture</a>
-    <a href="#features">Features</a>
-    <a href="#terminal">Terminal</a>
+    <a href="#getting-started">Getting Started</a>
+    <a href="https://github.com/AshikNesin/exebox" target="_blank" class="nav-gh">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
   </div>
 </nav>
 
 <!-- ═══ HERO ═══ -->
 <div class="hero">
-  <div class="badge"><span class="dot"></span> Live on nesins-devbox · v0.5.0</div>
+  <div class="badge"><span class="dot"></span> v0.5.0 · Live on nesins-devbox</div>
   <h1>From zero VM to <span class="grad">serving traffic</span><br>in minutes.</h1>
-  <p class="sub">exebox automates multi-project development behind an nginx + portless reverse proxy on your exe.dev VM. DNS, domains, HMR — all wired up.</p>
+  <p class="sub">exebox automates multi-project development behind an nginx + portless reverse proxy on your exe.dev VM — DNS, domains, and HMR, all wired up.</p>
   <div class="hero-cta">
     <a href="#walkthrough" class="btn btn-primary">▶ Take the tour</a>
-    <a href="#terminal" class="btn btn-ghost">⌨ Open terminal</a>
+    <a href="#getting-started" class="btn btn-ghost">Getting Started</a>
   </div>
 
-  <div class="hero-term term" id="heroTerm">
+  <div class="hero-term term">
     <div class="term-bar">
       <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
       <span class="term-title">exedev@nesins-devbox — exebox</span>
@@ -228,131 +296,255 @@ footer a { color: var(--accent); text-decoration: none; }
   </div>
 </div>
 
-<!-- ═══ WALKTHROUGH ═══ -->
-<section id="walkthrough" class="reveal">
-  <div class="section-tag">Guided Tour</div>
-  <h2 class="section-title">Four commands to production</h2>
-  <p class="section-desc">Click through each step to watch exebox bring a fresh VM online — from installing dependencies to launching a live dev server.</p>
+<!-- ═══ PROBLEM ═══ -->
+<section id="problem" class="reveal">
+  <div class="wrap">
+    <div class="section-tag">The Problem</div>
+    <h2 class="section-title">The multi-project VM setup is painful</h2>
+    <p class="section-desc">Serving multiple projects with public domains from a single exe.dev VM involves a long chain of manual, error-prone steps. Here's what you'd do without exebox — and what goes wrong.</p>
 
-  <div class="walk-grid">
-    <div class="steps">
-      <button class="step-btn active" data-step="0">
-        <div class="step-num">STEP 1</div>
-        <div class="step-title">exebox setup</div>
-        <div class="step-desc">Install deps, configure nginx, discover VM identity</div>
-      </button>
-      <button class="step-btn" data-step="1">
-        <div class="step-num">STEP 2</div>
-        <div class="step-title">exebox new</div>
-        <div class="step-desc">Onboard a project domain — DNS + exe.dev + nginx</div>
-      </button>
-      <button class="step-btn" data-step="2">
-        <div class="step-num">STEP 3</div>
-        <div class="step-title">exebox dev</div>
-        <div class="step-desc">Launch dev server with HMR through the proxy</div>
-      </button>
-      <button class="step-btn" data-step="3">
-        <div class="step-num">STEP 4</div>
-        <div class="step-title">exebox status</div>
-        <div class="step-desc">Verify everything is live and healthy</div>
-      </button>
-    </div>
-
-    <div class="term">
-      <div class="term-bar">
-        <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
-        <span class="term-title">walkthrough — exebox</span>
-        <button id="replayBtn" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--dim);border-radius:6px;padding:4px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;">↻ replay</button>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <h3><span class="bad">✗</span> Without exebox — the manual way</h3>
+        <ul class="problem-list">
+          <li><span class="icon bad">1.</span> Install Node.js LTS, portless, and nginx — and configure each one correctly.</li>
+          <li><span class="icon bad">2.</span> Start a shared portless daemon on <code>:8888</code> with the right flags.</li>
+          <li><span class="icon bad">3.</span> Write a Host-rewriting reverse-proxy nginx config on <code>:8080</code> by hand.</li>
+          <li><span class="icon bad">4.</span> Discover the VM name and default port from the reflection endpoint.</li>
+          <li><span class="icon bad">5.</span> For every project: add a DNS CNAME to <code>&lt;vm&gt;.exe.xyz</code> at your registrar.</li>
+          <li><span class="icon bad">6.</span> For every project: register the domain with exe.dev via <code>ssh exe.dev domain add</code>.</li>
+          <li><span class="icon bad">7.</span> Debug broken Vite HMR — WebSocket connections fail through the proxy.</li>
+        </ul>
       </div>
-      <div class="term-body" id="walkTermBody"></div>
+      <div class="problem-card">
+        <h3><span class="good">✓</span> With exebox — automated</h3>
+        <ul class="problem-list">
+          <li><span class="icon good">1.</span> <code>exebox setup</code> — installs deps, configures nginx, discovers VM identity. One command, idempotent.</li>
+          <li><span class="icon good">2.</span> <code>exebox new groot</code> — DNS CNAME, exe.dev registration, nginx server block — all wired up automatically.</li>
+          <li><span class="icon good">3.</span> <code>exebox dev groot</code> — launches the dev server with HMR that actually works through the proxy.</li>
+          <li><span class="icon good">4.</span> Cloudflare CNAMEs created via API — no manual DNS editing.</li>
+          <li><span class="icon good">5.</span> Push notifications when a domain goes live or a dev server starts.</li>
+          <li><span class="icon good">6.</span> <code>exebox doctor</code> — one-command health check for the entire stack.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ WALKTHROUGH ═══ -->
+<section id="walkthrough" class="reveal" style="background: var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-tag">Guided Tour</div>
+    <h2 class="section-title">Four commands to production</h2>
+    <p class="section-desc">Click through each step to watch exebox bring a fresh VM online — from installing dependencies to launching a live dev server.</p>
+
+    <div class="walk-grid">
+      <div class="steps">
+        <button class="step-btn active" data-step="0">
+          <div class="step-num">STEP 1</div>
+          <div class="step-title">exebox setup</div>
+          <div class="step-desc">Install deps, configure nginx, discover VM identity</div>
+        </button>
+        <button class="step-btn" data-step="1">
+          <div class="step-num">STEP 2</div>
+          <div class="step-title">exebox new groot</div>
+          <div class="step-desc">Onboard a project domain — DNS + exe.dev + nginx</div>
+        </button>
+        <button class="step-btn" data-step="2">
+          <div class="step-num">STEP 3</div>
+          <div class="step-title">exebox dev groot</div>
+          <div class="step-desc">Launch dev server with HMR through the proxy</div>
+        </button>
+        <button class="step-btn" data-step="3">
+          <div class="step-num">STEP 4</div>
+          <div class="step-title">exebox status</div>
+          <div class="step-desc">Verify everything is live and healthy</div>
+        </button>
+      </div>
+
+      <div class="term">
+        <div class="term-bar">
+          <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+          <span class="term-title">walkthrough — exebox</span>
+          <button id="replayBtn" class="replay-btn">↻ replay</button>
+        </div>
+        <div class="term-body" id="walkTermBody"></div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ═══ ARCHITECTURE ═══ -->
 <section id="architecture" class="reveal">
-  <div class="section-tag">Under the hood</div>
-  <h2 class="section-title">How traffic flows</h2>
-  <p class="section-desc">exebox wires a four-layer pipeline so each project gets its own public domain, routed all the way down to a local dev server.</p>
+  <div class="wrap">
+    <div class="section-tag">Under the hood</div>
+    <h2 class="section-title">How traffic flows</h2>
+    <p class="section-desc">exebox wires a four-layer pipeline so each project gets its own public domain, routed all the way down to a local dev server. exe.dev terminates TLS; nginx does Host-based routing; portless maps routes to dev servers.</p>
 
-  <div class="arch-wrap">
-    <div class="arch-flow" id="archFlow">
-      <div class="arch-node">
-        <div class="icon">🌐</div>
-        <div class="name">Browser</div>
-        <div class="meta">app.nesin.io</div>
-      </div>
-      <div class="arch-arrow"><div class="line"></div><div class="label">HTTPS</div><span class="head">▶</span></div>
-      <div class="arch-node">
-        <div class="icon">🔒</div>
-        <div class="name">exe.dev Proxy</div>
-        <div class="meta">TLS terminate</div>
-      </div>
-      <div class="arch-arrow"><div class="line"></div><div class="label">HTTP</div><span class="head">▶</span></div>
-      <div class="arch-node">
-        <div class="icon">⚙️</div>
-        <div class="name">nginx :8080</div>
-        <div class="meta">Host routing</div>
-      </div>
-      <div class="arch-arrow"><div class="line"></div><div class="label">proxy</div><span class="head">▶</span></div>
-      <div class="arch-node">
-        <div class="icon">🔀</div>
-        <div class="name">portless :8888</div>
-        <div class="meta">project.localhost</div>
-      </div>
-      <div class="arch-arrow"><div class="line"></div><div class="label">route</div><span class="head">▶</span></div>
-      <div class="arch-node">
-        <div class="icon">⚡</div>
-        <div class="name">Dev Server</div>
-        <div class="meta">Vite / Next</div>
+    <div class="arch-wrap">
+      <div class="arch-flow" id="archFlow">
+        <div class="arch-node">
+          <div class="icon">🌐</div>
+          <div class="name">Browser</div>
+          <div class="meta">app.nesin.io</div>
+        </div>
+        <div class="arch-arrow"><div class="line"></div><div class="label">HTTPS</div><span class="head">▶</span></div>
+        <div class="arch-node">
+          <div class="icon">🔒</div>
+          <div class="name">exe.dev Proxy</div>
+          <div class="meta">TLS terminate</div>
+        </div>
+        <div class="arch-arrow"><div class="line"></div><div class="label">HTTP</div><span class="head">▶</span></div>
+        <div class="arch-node">
+          <div class="icon">⚙️</div>
+          <div class="name">nginx :8080</div>
+          <div class="meta">Host routing</div>
+        </div>
+        <div class="arch-arrow"><div class="line"></div><div class="label">proxy</div><span class="head">▶</span></div>
+        <div class="arch-node">
+          <div class="icon">🔀</div>
+          <div class="name">portless :8888</div>
+          <div class="meta">project.localhost</div>
+        </div>
+        <div class="arch-arrow"><div class="line"></div><div class="label">route</div><span class="head">▶</span></div>
+        <div class="arch-node">
+          <div class="icon">⚡</div>
+          <div class="name">Dev Server</div>
+          <div class="meta">Vite / Next</div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ═══ FEATURES ═══ -->
-<section id="features" class="reveal">
-  <div class="section-tag">Why exebox</div>
-  <h2 class="section-title">Batteries included</h2>
-  <p class="section-desc">Every painful manual step from the multi-project setup — automated, idempotent, and production-tested.</p>
+<section id="features" class="reveal" style="background: var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-tag">Why exebox</div>
+    <h2 class="section-title">Batteries included</h2>
+    <p class="section-desc">Every painful manual step from the multi-project setup — automated, idempotent, and production-tested on a live exe.dev VM.</p>
 
-  <div class="cards">
-    <div class="card"><span class="emoji">🔌</span><h3>Auto DNS</h3><p>Detects Cloudflare and creates the CNAME automatically via the exe.dev proxy or your API token. Manual instructions for everything else.</p></div>
-    <div class="card"><span class="emoji">🔥</span><h3>HMR that works</h3><p>Sets VITE_HMR_URL to your public domain so hot module replacement flows through exe.dev + nginx without a single WebSocket error.</p></div>
-    <div class="card"><span class="emoji">🏠</span><h3>Smart defaults</h3><p>Set --default-domain once, then just pass a project name. exebox derives the FQDN and wires the whole chain.</p></div>
-    <div class="card"><span class="emoji">📡</span><h3>Push notifications</h3><p>Get notified on your device when a domain is added, a dev server starts, or setup completes. Silent if unavailable.</p></div>
-    <div class="card"><span class="emoji">🩺</span><h3>Health checks</h3><p>exebox doctor validates reflection, dependencies, services, and ports — so you know the stack is healthy at a glance.</p></div>
-    <div class="card"><span class="emoji">🔄</span><h3>Idempotent</h3><p>Every command is safe to re-run. setup, new, and dev clean up after themselves and settle into the right state.</p></div>
+    <div class="cards">
+      <div class="card"><span class="emoji">🔌</span><h3>Auto DNS</h3><p>Detects Cloudflare and creates the CNAME automatically via the exe.dev proxy or your API token. Manual instructions with exact records for everything else.</p></div>
+      <div class="card"><span class="emoji">🔥</span><h3>HMR that works</h3><p>Sets VITE_HMR_URL to your public domain so hot module replacement flows through exe.dev + nginx without WebSocket errors.</p></div>
+      <div class="card"><span class="emoji">🏠</span><h3>Smart defaults</h3><p>Set --default-domain once, then just pass a project name. exebox derives the FQDN and wires the whole chain automatically.</p></div>
+      <div class="card"><span class="emoji">📡</span><h3>Push notifications</h3><p>Get notified on your device when a domain is added, a dev server starts, or setup completes. Silent if unavailable.</p></div>
+      <div class="card"><span class="emoji">🩺</span><h3>Health checks</h3><p>exebox doctor validates reflection, dependencies, services, and ports — so you know the stack is healthy at a glance.</p></div>
+      <div class="card"><span class="emoji">🔄</span><h3>Idempotent</h3><p>Every command is safe to re-run. setup, new, and dev clean up after themselves and settle into the right state.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ GETTING STARTED ═══ -->
+<section id="getting-started" class="reveal">
+  <div class="wrap">
+    <div class="section-tag">Quick Start</div>
+    <h2 class="section-title">Get started in 60 seconds</h2>
+    <p class="section-desc">Install exebox, run setup once, then onboard and launch projects with single commands. No Go toolchain required — just curl the binary.</p>
+
+    <div class="gs-steps">
+      <div class="gs-step">
+        <div class="gs-num">1</div>
+        <div class="gs-content">
+          <h4>Install exebox</h4>
+          <p>Grab the latest release binary — no Go needed:</p>
+          <div class="gs-code">
+<span class="line"><span class="cmt"># From release binary (recommended)</span></span>
+<span class="line"><span class="k">curl</span> -sfL https://raw.githubusercontent.com/AshikNesin/exebox/main/install.sh <span class="k">|</span> <span class="k">bash</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-step">
+        <div class="gs-num">2</div>
+        <div class="gs-content">
+          <h4>Set up the VM (one-time, idempotent)</h4>
+          <p>Installs Node.js, portless, and nginx; discovers the VM's identity; sets your default domain so you can just pass project names later.</p>
+          <div class="gs-code">
+<span class="line"><span class="k">exebox</span> setup --default-domain <span class="str">example.com</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-step">
+        <div class="gs-num">3</div>
+        <div class="gs-content">
+          <h4>Onboard a project</h4>
+          <p>Wires DNS (CNAME → your-vm.exe.xyz), registers with exe.dev, writes the nginx server block, and reloads — all in one command.</p>
+          <div class="gs-code">
+<span class="line"><span class="cmt"># Derives myapp.example.com from your default domain</span></span>
+<span class="line"><span class="k">exebox</span> new <span class="str">myapp</span></span>
+<span class="line"><span class="cmt"># Or specify the full domain explicitly</span></span>
+<span class="line"><span class="k">exebox</span> new -d <span class="str">myapp.example.com</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-step">
+        <div class="gs-num">4</div>
+        <div class="gs-content">
+          <h4>Launch the dev server</h4>
+          <p>Sets VITE_HMR_URL so HMR works through the proxy, registers the portless route, and runs detached with logs.</p>
+          <div class="gs-code">
+<span class="line"><span class="k">exebox</span> dev <span class="str">myapp</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-step">
+        <div class="gs-num">5</div>
+        <div class="gs-content">
+          <h4>Verify everything is live</h4>
+          <p>Check VM identity, proxy state, domain liveness, and portless routes.</p>
+          <div class="gs-code">
+<span class="line"><span class="k">exebox</span> status</span>
+<span class="line"><span class="k">exebox</span> doctor   <span class="cmt"># full health check</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 36px;">
+      <a href="https://github.com/AshikNesin/exebox" target="_blank" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+    </div>
   </div>
 </section>
 
 <!-- ═══ INTERACTIVE TERMINAL ═══ -->
-<section id="terminal" class="reveal">
-  <div class="section-tag">Try it yourself</div>
-  <h2 class="section-title">Interactive terminal</h2>
-  <p class="section-desc">Run any exebox command. Click a chip below or type your own — the simulated CLI responds just like the real thing.</p>
+<section id="terminal" class="reveal" style="background: var(--bg-soft);">
+  <div class="wrap">
+    <div class="section-tag">Try it yourself</div>
+    <h2 class="section-title">Interactive terminal</h2>
+    <p class="section-desc">Run any exebox command. Click a chip below — the simulated CLI responds just like the real thing.</p>
 
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
-    <button class="btn btn-ghost quick" data-cmd="exebox setup --default-domain nesin.io" style="font-family:var(--mono);font-size:13px;padding:9px 14px;">exebox setup</button>
-    <button class="btn btn-ghost quick" data-cmd="exebox new groot" style="font-family:var(--mono);font-size:13px;padding:9px 14px;">exebox new groot</button>
-    <button class="btn btn-ghost quick" data-cmd="exebox dev groot" style="font-family:var(--mono);font-size:13px;padding:9px 14px;">exebox dev groot</button>
-    <button class="btn btn-ghost quick" data-cmd="exebox status" style="font-family:var(--mono);font-size:13px;padding:9px 14px;">exebox status</button>
-    <button class="btn btn-ghost quick" data-cmd="exebox doctor" style="font-family:var(--mono);font-size:13px;padding:9px 14px;">exebox doctor</button>
-    <button class="btn btn-ghost quick" data-cmd="exebox update --check" style="font-family:var(--mono);font-size:13px;padding:9px 14px;">exebox update</button>
-  </div>
-
-  <div class="term">
-    <div class="term-bar">
-      <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
-      <span class="term-title">exedev@nesins-devbox — interactive</span>
+    <div class="chips">
+      <button class="chip quick" data-cmd="exebox setup --default-domain nesin.io">exebox setup</button>
+      <button class="chip quick" data-cmd="exebox new groot">exebox new groot</button>
+      <button class="chip quick" data-cmd="exebox dev groot">exebox dev groot</button>
+      <button class="chip quick" data-cmd="exebox status">exebox status</button>
+      <button class="chip quick" data-cmd="exebox doctor">exebox doctor</button>
+      <button class="chip quick" data-cmd="exebox update --check">exebox update</button>
     </div>
-    <div class="term-body" id="intTermBody"></div>
+
+    <div class="term">
+      <div class="term-bar">
+        <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+        <span class="term-title">exedev@nesins-devbox — interactive</span>
+      </div>
+      <div class="term-body" id="intTermBody"></div>
+    </div>
   </div>
 </section>
 
 <footer>
-  <p>📦 <strong>exebox</strong> — MIT Licensed · <a href="https://github.com/AshikNesin/exebox">github.com/AshikNesin/exebox</a></p>
-  <p style="margin-top:8px;opacity:.6;">Interactive demo · simulated CLI output</p>
+  <div class="wrap">
+    <p>📦 <strong>exebox</strong> — MIT Licensed</p>
+    <p><a href="https://github.com/AshikNesin/exebox" target="_blank">github.com/AshikNesin/exebox</a></p>
+    <p style="margin-top: 10px; opacity: .6; font-size: 13px;">Interactive demo · simulated CLI output</p>
+  </div>
 </footer>
 
 <script>
@@ -366,168 +558,156 @@ function escapeHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-async function typeInto(el, text, opts = {}) {
-  const speed = opts.speed || 16;
-  for (let i = 0; i < text.length; i++) {
-    el.textContent += text[i];
-    if (text[i] !== ' ') await sleep(speed);
-    el.scrollTop = el.scrollHeight;
-  }
-}
-
 async function appendLine(el, line, cls = 'out') {
   const div = document.createElement('div');
   div.innerHTML = line;
   el.appendChild(div);
   el.scrollTop = el.scrollHeight;
-  if (line.trim()) await sleep(120);
+  if (line.trim()) await sleep(110);
 }
 
-// Build a prompt line with command
 async function promptLine(el, cmd, prompt = 'exedev@nesins-devbox') {
   const div = document.createElement('div');
   div.innerHTML = `<span class="prompt">${prompt}</span>:<span class="acc">~</span>$ <span class="cmd">${escapeHtml(cmd)}</span>`;
   el.appendChild(div);
   el.scrollTop = el.scrollHeight;
-  await sleep(300);
+  await sleep(280);
 }
 
 // ═══════════════════════════════════════════════════
 // Command simulations
-// Each returns array of [text, class] line pairs OR a generator
 // ═══════════════════════════════════════════════════
 
-const SP = '&nbsp;&nbsp;&nbsp;'; // spaces for aligned output
+const SP = '&nbsp;&nbsp;&nbsp;';
 
 const SIMS = {
   'exebox setup --default-domain nesin.io': [
-    [`${SP}🔧 exebox setup`, 'acc'],
-    [`${SP}Checking dependencies...`, 'dim'],
-    [`  ✓ Node.js v24.18.0`, 'ok'],
-    [`  ✓ portless found at ~/.local/bin/portless`, 'ok'],
-    [`  ✓ nginx found at /usr/sbin/nginx`, 'ok'],
+    [`${SP}<span class="acc">🔧 exebox setup</span>`, 'acc'],
+    [`${SP}<span class="dim">Checking dependencies...</span>`, 'dim'],
+    [`&nbsp;&nbsp;✓ Node.js v24.18.0`, 'ok'],
+    [`&nbsp;&nbsp;✓ portless found at ~/.local/bin/portless`, 'ok'],
+    [`&nbsp;&nbsp;✓ nginx found at /usr/sbin/nginx`, 'ok'],
     [``, 'out'],
-    [`${SP}Discovering VM identity via reflection...`, 'dim'],
-    [`  VM name:    <span class="pur">nesins-devbox</span>`, 'out'],
-    [`  Default port: <span class="pur">8080</span>`, 'out'],
-    [`  Owner:      nesintechnologies@gmail.com`, 'dim'],
+    [`${SP}<span class="dim">Discovering VM identity via reflection...</span>`, 'dim'],
+    [`&nbsp;&nbsp;VM name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="pur">nesins-devbox</span>`, 'out'],
+    [`&nbsp;&nbsp;Default port: <span class="pur">8080</span>`, 'out'],
+    [`&nbsp;&nbsp;Owner:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nesintechnologies@gmail.com`, 'dim'],
     [``, 'out'],
-    [`${SP}Writing nginx config to ~/.exebox/nginx...`, 'dim'],
-    [`  ✓ 00-exebox-base.conf (WS upgrade + catch-all)`, 'ok'],
-    [`  ✓ Installed include shim → /etc/nginx/conf.d/exebox.conf`, 'ok'],
-    [`  ✓ nginx reloaded`, 'ok'],
+    [`${SP}<span class="dim">Writing nginx config to ~/.exebox/nginx...</span>`, 'dim'],
+    [`&nbsp;&nbsp;✓ 00-exebox-base.conf (WS upgrade + catch-all)`, 'ok'],
+    [`&nbsp;&nbsp;✓ Installed include shim → /etc/nginx/conf.d/exebox.conf`, 'ok'],
+    [`&nbsp;&nbsp;✓ nginx reloaded`, 'ok'],
     [``, 'out'],
-    [`${SP}Starting portless daemon on :8888...`, 'dim'],
-    [`  ✓ portless running (pid 4287)`, 'ok'],
+    [`${SP}<span class="dim">Starting portless daemon on :8888...</span>`, 'dim'],
+    [`&nbsp;&nbsp;✓ portless running (pid 4287)`, 'ok'],
     [``, 'out'],
     [`${SP}Saving default domain: <span class="acc">nesin.io</span>`, 'out'],
     [``, 'out'],
-    [`  ✓ Shell completion installed for bash`, 'ok'],
+    [`&nbsp;&nbsp;✓ Shell completion installed for bash`, 'ok'],
     [``, 'out'],
-    [`✅ Setup complete. Run <span class="cmd">exebox new &lt;project&gt;</span> to onboard a domain.`, 'ok'],
+    [`✅ Setup complete. Run <span class="cmd">exebox &lt;project&gt;</span> to onboard a domain.`, 'ok'],
   ],
 
   'exebox new groot': [
-    [`${SP}📦 Onboarding project: <span class="acc">groot</span>`, 'acc'],
-    [`  Derived domain: <span class="pur">groot.nesin.io</span>`, 'out'],
+    [`${SP}<span class="acc">📦 Onboarding project: groot</span>`, 'acc'],
+    [`&nbsp;&nbsp;Derived domain: <span class="pur">groot.nesin.io</span>`, 'out'],
     [``, 'out'],
-    [`${SP}Detecting DNS provider for nesin.io...`, 'dim'],
-    [`  Provider: <span class="ok">Cloudflare</span>`, 'out'],
+    [`${SP}<span class="dim">Detecting DNS provider for nesin.io...</span>`, 'dim'],
+    [`&nbsp;&nbsp;Provider: <span class="ok">Cloudflare</span>`, 'out'],
     [``, 'out'],
-    [`${SP}Adding CNAME record...`, 'dim'],
-    [`  groot.nesin.io → CNAME → nesins-devbox.exe.xyz`, 'out'],
-    [`  ✓ Record created via exe.dev Cloudflare integration`, 'ok'],
+    [`${SP}<span class="dim">Adding CNAME record...</span>`, 'dim'],
+    [`&nbsp;&nbsp;groot.nesin.io → CNAME → nesins-devbox.exe.xyz`, 'out'],
+    [`&nbsp;&nbsp;✓ Record created via exe.dev Cloudflare integration`, 'ok'],
     [``, 'out'],
-    [`${SP}Registering domain with exe.dev...`, 'dim'],
-    [`  ✓ Domain registered (API token found)`, 'ok'],
+    [`${SP}<span class="dim">Registering domain with exe.dev...</span>`, 'dim'],
+    [`&nbsp;&nbsp;✓ Domain registered (API token found)`, 'ok'],
     [``, 'out'],
-    [`${SP}Writing nginx server block...`, 'dim'],
-    [`  ✓ ~/.exebox/nginx/conf.d/groot.conf`, 'ok'],
-    [`  ✓ nginx reloaded`, 'ok'],
+    [`${SP}<span class="dim">Writing nginx server block...</span>`, 'dim'],
+    [`&nbsp;&nbsp;✓ ~/.exebox/nginx/conf.d/groot.conf`, 'ok'],
+    [`&nbsp;&nbsp;✓ nginx reloaded`, 'ok'],
     [``, 'out'],
     [`✅ groot.nesin.io is live. Run <span class="cmd">exebox dev groot</span> to start serving.`, 'ok'],
   ],
 
   'exebox dev groot': [
-    [`${SP}🚀 Launching dev server for: <span class="acc">groot</span>`, 'acc'],
-    [`  Setting HMR environment...`, 'dim'],
-    [`  VITE_HMR_URL = wss://groot.nesin.io/hmr`, 'out'],
+    [`${SP}<span class="acc">🚀 Launching dev server for: groot</span>`, 'acc'],
+    [`&nbsp;&nbsp;<span class="dim">Setting HMR environment...</span>`, 'dim'],
+    [`&nbsp;&nbsp;VITE_HMR_URL = wss://groot.nesin.io/hmr`, 'out'],
     [``, 'out'],
-    [`${SP}Cleaning up stale processes on route 'groot.localhost'...`, 'dim'],
-    [`  ✓ No conflicts found`, 'ok'],
+    [`${SP}<span class="dim">Cleaning up stale processes on route 'groot.localhost'...</span>`, 'dim'],
+    [`&nbsp;&nbsp;✓ No conflicts found`, 'ok'],
     [``, 'out'],
-    [`${SP}Starting dev server (detached)...`, 'dim'],
+    [`${SP}<span class="dim">Starting dev server (detached)...</span>`, 'dim'],
     [``, 'out'],
-    [`  VITE v6.0.0  ready in 412 ms`, 'pur'],
+    [`&nbsp;&nbsp;<span class="pur">VITE v6.0.0&nbsp;&nbsp;ready in 412 ms</span>`, 'pur'],
     [``, 'out'],
-    [`  ➜  Local:   http://localhost:5173/`, 'dim'],
-    [`  ➜  Network: http://groot.localhost:5173/`, 'dim'],
-    [`  ➜  HMR:     wss://groot.nesin.io/hmr ✓`, 'ok'],
+    [`&nbsp;&nbsp;➜&nbsp;&nbsp;Local:&nbsp;&nbsp;&nbsp;http://localhost:5173/`, 'dim'],
+    [`&nbsp;&nbsp;➜&nbsp;&nbsp;Network: http://groot.localhost:5173/`, 'dim'],
+    [`&nbsp;&nbsp;➜&nbsp;&nbsp;<span class="ok">HMR:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wss://groot.nesin.io/hmr ✓</span>`, 'ok'],
     [``, 'out'],
-    [`  portless: route 'groot.localhost' → :5173 registered`, 'out'],
+    [`&nbsp;&nbsp;portless: route 'groot.localhost' → :5173 registered`, 'out'],
     [``, 'out'],
     [`✅ Dev server running. Logs: ~/.exebox/state/groot-dev.log`, 'ok'],
     [`🌐 Visit: https://groot.nesin.io`, 'acc'],
   ],
 
   'exebox status': [
-    [`${SP}📊 exebox status`, 'acc'],
+    [`${SP}<span class="acc">📊 exebox status</span>`, 'acc'],
     [``, 'out'],
     [` VM Identity`, 'pur'],
-    [`  ${SP}name:    nesins-devbox`, 'out'],
-    [`  ${SP}port:    8080`, 'out'],
-    [`  ${SP}owner:   nesintechnologies@gmail.com`, 'dim'],
+    [`&nbsp;&nbsp;${SP}name:&nbsp;&nbsp;&nbsp;&nbsp;nesins-devbox`, 'out'],
+    [`&nbsp;&nbsp;${SP}port:&nbsp;&nbsp;&nbsp;&nbsp;8080`, 'out'],
+    [`&nbsp;&nbsp;${SP}owner:&nbsp;&nbsp;&nbsp;nesintechnologies@gmail.com`, 'dim'],
     [``, 'out'],
     [` Services`, 'pur'],
-    [`  ${SP}nginx       ✓ listening on :8080`, 'ok'],
-    [`  ${SP}portless    ✓ listening on :8888`, 'ok'],
+    [`&nbsp;&nbsp;${SP}nginx&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✓ listening on :8080`, 'ok'],
+    [`&nbsp;&nbsp;${SP}portless&nbsp;&nbsp;&nbsp;&nbsp;✓ listening on :8888`, 'ok'],
     [``, 'out'],
     [` Domains`, 'pur'],
-    [`  ${SP}groot.nesin.io    ✓ 200 OK`, 'ok'],
-    [`  ${SP}api.nesin.io      ✓ 200 OK`, 'ok'],
+    [`&nbsp;&nbsp;${SP}groot.nesin.io&nbsp;&nbsp;&nbsp;&nbsp;✓ 200 OK`, 'ok'],
+    [`&nbsp;&nbsp;${SP}api.nesin.io&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✓ 200 OK`, 'ok'],
     [``, 'out'],
     [` Routes (portless)`, 'pur'],
-    [`  ${SP}groot.localhost → :5173`, 'out'],
-    [`  ${SP}api.localhost   → :3000`, 'out'],
+    [`&nbsp;&nbsp;${SP}groot.localhost → :5173`, 'out'],
+    [`&nbsp;&nbsp;${SP}api.localhost&nbsp;&nbsp;&nbsp;→ :3000`, 'out'],
     [``, 'out'],
     [`✅ All systems operational`, 'ok'],
   ],
 
   'exebox doctor': [
-    [`${SP}🩺 exebox doctor`, 'acc'],
+    [`${SP}<span class="acc">🩺 exebox doctor</span>`, 'acc'],
     [``, 'out'],
     [` Reflection`, 'pur'],
-    [`  ${SP}✓ reflection.int.exe.xyz reachable`, 'ok'],
-    [`  ${SP}✓ VM identity discovered`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ reflection.int.exe.xyz reachable`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ VM identity discovered`, 'ok'],
     [``, 'out'],
     [` Dependencies`, 'pur'],
-    [`  ${SP}✓ node    v24.18.0`, 'ok'],
-    [`  ${SP}✓ portless v2.4.1`, 'ok'],
-    [`  ${SP}✓ nginx   1.24.0`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ node&nbsp;&nbsp;&nbsp;&nbsp;v24.18.0`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ portless v2.4.1`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ nginx&nbsp;&nbsp;&nbsp;1.24.0`, 'ok'],
     [``, 'out'],
     [` Services`, 'pur'],
-    [`  ${SP}✓ nginx running`, 'ok'],
-    [`  ${SP}✓ portless daemon running`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ nginx running`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ portless daemon running`, 'ok'],
     [``, 'out'],
     [` Ports`, 'pur'],
-    [`  ${SP}✓ :8080 nginx (default proxy port)`, 'ok'],
-    [`  ${SP}✓ :8888 portless daemon`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ :8080 nginx (default proxy port)`, 'ok'],
+    [`&nbsp;&nbsp;${SP}✓ :8888 portless daemon`, 'ok'],
     [``, 'out'],
     [`✅ All health checks passed (8/8)`, 'ok'],
   ],
 
   'exebox update --check': [
-    [`${SP}🔄 exebox update --check`, 'acc'],
+    [`${SP}<span class="acc">🔄 exebox update --check</span>`, 'acc'],
     [``, 'out'],
-    [`${SP}Checking latest release...`, 'dim'],
-    [`  Current: v0.5.0`, 'out'],
-    [`  Latest:  v0.5.0`, 'out'],
+    [`${SP}<span class="dim">Checking latest release...</span>`, 'dim'],
+    [`&nbsp;&nbsp;Current: v0.5.0`, 'out'],
+    [`&nbsp;&nbsp;Latest:&nbsp;&nbsp;v0.5.0`, 'out'],
     [``, 'out'],
     [`✅ You're on the latest version.`, 'ok'],
   ],
 };
 
-// Run a full simulation into a given terminal body
 async function runSim(el, cmd) {
   await promptLine(el, cmd);
   const lines = SIMS[cmd];
@@ -555,9 +735,9 @@ async function heroLoop() {
     el.innerHTML = '';
     for (const cmd of seq) {
       await runSim(el, cmd);
-      await sleep(1600);
+      await sleep(1500);
     }
-    await sleep(2200);
+    await sleep(2000);
   }
 }
 
@@ -578,8 +758,7 @@ async function runWalkthrough(step) {
   walkRunning = true;
   const el = document.getElementById('walkTermBody');
   el.innerHTML = '';
-  const cmd = WALK_CMDS[step];
-  await runSim(el, cmd);
+  await runSim(el, WALK_CMDS[step]);
   walkRunning = false;
 }
 
@@ -593,11 +772,15 @@ let intBusy = false;
 async function runInteractive(cmd) {
   if (intBusy) return;
   intBusy = true;
+  intBody.querySelector('.cursor-line')?.remove();
   await runSim(intBody, cmd);
+  const d = document.createElement('div');
+  d.className = 'cursor-line';
+  d.innerHTML = `<span class="prompt">exedev@nesins-devbox</span>:<span class="acc">~</span>$ <span class="cursor"></span>`;
+  intBody.appendChild(d);
   intBusy = false;
 }
 
-// Quick command chips
 document.querySelectorAll('.quick').forEach(btn => {
   btn.addEventListener('click', () => runInteractive(btn.dataset.cmd));
 });
@@ -641,12 +824,12 @@ function animatePackets() {
       arr.appendChild(p);
       p.animate([
         { left: '4px', opacity: 0 },
-        { left: '10px', opacity: 1, offset: 0.15 },
-        { left: '40px', opacity: 1, offset: 0.85 },
-        { left: '46px', opacity: 0 }
-      ], { duration: 1200, easing: 'linear' });
-      setTimeout(() => p.remove(), 1300);
-    }, 2400 + i * 300);
+        { left: '8px', opacity: 1, offset: 0.15 },
+        { left: '38px', opacity: 1, offset: 0.85 },
+        { left: '42px', opacity: 0 }
+      ], { duration: 1100, easing: 'linear' });
+      setTimeout(() => p.remove(), 1200);
+    }, 2200 + i * 280);
   });
 }
 
@@ -654,18 +837,17 @@ function animatePackets() {
 // Boot
 // ═══════════════════════════════════════════════════
 
-// Seed interactive terminal
 (function seedInt() {
   const el = intBody;
   const d = document.createElement('div');
   d.innerHTML = `<span class="dim"># exebox interactive demo — click a command chip above</span>`;
   el.appendChild(d);
   const d2 = document.createElement('div');
+  d2.className = 'cursor-line';
   d2.innerHTML = `<span class="prompt">exedev@nesins-devbox</span>:<span class="acc">~</span>$ <span class="cursor"></span>`;
   el.appendChild(d2);
 })();
 
-// Start everything
 setTimeout(() => { heroLoop(); }, 600);
 setTimeout(() => { runWalkthrough(0); }, 1000);
 animatePackets();
