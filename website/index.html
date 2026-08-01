@@ -596,19 +596,18 @@ section { padding: 96px 0; position: relative; }
 /* ═══ Footer ═══ */
 footer {
   border-top: 1px solid var(--border-soft); padding: 48px 24px;
+  text-align: center;
 }
 .footer-inner {
   max-width: var(--max-w); margin: 0 auto;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: center;
   flex-wrap: wrap; gap: 16px;
 }
 .footer-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); }
 .footer-links { display: flex; gap: 24px; align-items: center; }
 .footer-links a { color: var(--text-secondary); font-size: 14px; transition: color .2s; }
 .footer-links a:hover { color: var(--brand); }
-.footer-copy { color: var(--text-tertiary); font-size: 13px; }
-.footer-bottom { flex-basis: 100%; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-soft); text-align: center; }
-.footer-built { color: var(--text-tertiary); font-size: 12.5px; }
+.footer-built { color: var(--text-tertiary); font-size: 13px; margin-top: 20px; }
 .footer-built a { color: var(--text-secondary); text-decoration: none; border-bottom: 1px solid var(--border); transition: border-color .2s, color .2s; }
 .footer-built a:hover { color: var(--brand); border-color: var(--brand); }
 
@@ -989,12 +988,9 @@ footer {
       <a href="https://github.com/AshikNesin/exebox/blob/main/CHANGELOG.md" target="_blank">Changelog</a>
       <a href="https://github.com/AshikNesin/exebox/blob/main/docs/PRD.md" target="_blank">PRD</a>
     </div>
-    <div class="footer-copy">MIT Licensed · Built for exe.dev</div>
-    <div class="footer-bottom">
-      <div class="footer-built">
-        Built by <a href="https://ashiknesin.com" target="_blank">Ashik Nesin</a> with <a href="https://github.com/boldsoftware/shelley" target="_blank">Shelley Agent</a>
-      </div>
-    </div>
+  </div>
+  <div class="footer-built">
+    Built by <a href="https://ashiknesin.com" target="_blank">Ashik Nesin</a> with <a href="https://github.com/boldsoftware/shelley" target="_blank">Shelley Agent</a>
   </div>
 </footer>
 
