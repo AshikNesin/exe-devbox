@@ -18,6 +18,7 @@ A CLI that automates bringing up an [exe.dev](https://exe.dev) VM for multi-proj
 - Adds the `CNAME → <vm>.exe.xyz` (via Cloudflare API automatically via the exe.dev proxy, or via `$CLOUDFLARE_API_TOKEN`, else prints manual instructions)
 - Registers the domain with exe.dev (automatically if an API token is set, else prints the command to run)
 - Writes the nginx server block and reloads
+- **Smart defaults**: if a `--default-domain` was set during setup, just pass the project name and the FQDN is derived (`exebox new groot` → `groot.nesin.io`). Run with no args for an interactive project picker that scans `~/Code`.
 
 **3. HMR-aware dev launching** — `exebox dev`
 
@@ -45,10 +46,12 @@ make install   # builds to ~/.local/bin/exebox + installs bash completion
 
 ```bash
 # 1. Bring the VM up (idempotent — safe to re-run)
-exebox setup
+exebox setup --default-domain example.com
 
 # 2. Wire a public domain to a project on this VM
-exebox new -d myapp.example.com --project myapp
+exebox new myapp         # derives myapp.example.com from --default-domain
+# or: exebox new -d myapp.example.com
+# or: exebox new          # interactive project picker (scans ~/Code)
 
 # 3. Launch the dev server with correct HMR env
 exebox dev myapp

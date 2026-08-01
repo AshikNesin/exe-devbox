@@ -25,7 +25,7 @@ import (
 const defaultNginxPort = 8000
 
 func newSetupCmd() *cobra.Command {
-	var vmName, nginxPortStr, portlessPortStr string
+	var vmName, nginxPortStr, portlessPortStr, defaultDomain string
 	cmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Install deps, manage nginx config, discover VM identity",
@@ -41,9 +41,10 @@ Steps:
   6. run doctor`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := setupOpts{
-				vmName:       vmName,
-				nginxPortStr: nginxPortStr,
-				portlessPort: parsePort(portlessPortStr, portless.DaemonPort),
+				vmName:        vmName,
+				nginxPortStr:  nginxPortStr,
+				portlessPort:  parsePort(portlessPortStr, portless.DaemonPort),
+				defaultDomain: defaultDomain,
 			}
 			res := runSetup(cmd.Context(), opts, cmd.Root())
 			output.Global.Print(output.Result{OK: res.ok, Exit: exitCode(res.ok), Data: res.report, Message: res.errMsg})
@@ -56,6 +57,7 @@ Steps:
 	cmd.Flags().StringVar(&vmName, "vm", "", "VM name (default: auto-discovered from reflection)")
 	cmd.Flags().StringVar(&nginxPortStr, "nginx-port", "", "port for nginx to listen on (default: reflection default port, or 8000)")
 	cmd.Flags().StringVar(&portlessPortStr, "portless-port", "", "port for the portless daemon (default 8888)")
+	cmd.Flags().StringVar(&defaultDomain, "default-domain", "", "default domain apex for deriving FQDNs in 'exebox new' (e.g. nesin.io)")
 	return cmd
 }
 
@@ -64,6 +66,7 @@ type setupOpts struct {
 	nginxPortStr  string // raw --nginx-port flag; resolved after reflection
 	nginxPort     int    // resolved (flag > reflection default > fallback)
 	portlessPort  int
+	defaultDomain string
 }
 
 type setupReport struct {
@@ -217,6 +220,10 @@ func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupRes
 	cfg.NginxPort = opts.nginxPort
 	cfg.PortlessPort = opts.portlessPort
 	cfg.CNAMETarget = id.CNAME()
+	if opts.defaultDomain != "" {
+		cfg.DefaultDomain = strings.ToLower(strings.TrimSpace(opts.defaultDomain))
+		out.OK("default domain set: %s (new projects get <name>.%s)", cfg.DefaultDomain, cfg.DefaultDomain)
+	}
 	_ = p.Save(cfg)
 
 	// 5. share-port suggest link if reflection port != nginx port

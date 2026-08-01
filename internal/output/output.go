@@ -155,3 +155,6 @@ func isTerminal(f *os.File) bool {
 	}
 	return (fi.Mode() & os.ModeCharDevice) != 0
 }
+
+// IsStdinTerminal reports whether stdin is a TTY (for interactive prompts).
+func IsStdinTerminal() bool { return isTerminal(os.Stdin) }

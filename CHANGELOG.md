@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `exebox setup --default-domain <apex>` — set a default domain root (e.g. `nesin.io`) so `exebox new <project>` derives `<project>.nesin.io` automatically. Persisted in config.
+- Interactive project picker for `exebox new` — run with no args to pick from unregistered projects in `~/Code` that have a `dev` script.
+
+### Changed
+- `exebox new` now accepts a positional project arg: `exebox new groot`.
+- `--domain` is no longer required on `exebox new` — it's derived from `--default-domain` + project name when omitted.
+
 ## [v0.4.0] - 2025-08-01
 
 ### Added

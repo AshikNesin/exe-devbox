@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -38,15 +40,26 @@ func newNewCmd() *cobra.Command {
   3. prints the exe.dev suggest link to register the domain (owner key needed)
   4. writes the nginx server block and reloads nginx
 
-Multiple domains sharing one backend: repeat --domain (e.g. Shelley on two
-hostnames). Backend: --to portless (default) or --to loopback:<port>.`,
+Usage modes:
+  exebox new -d myapp.example.com            explicit domain
+  exebox new groot                            derive <project>.<default-domain>
+  exebox new                                  interactive: pick from ~/Code projects
+
+If --domain is omitted, the FQDN is derived as <project>.<default-domain>
+where <default-domain> is set during 'exebox setup --default-domain'.
+Multiple domains: repeat --domain (shares one backend).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 && project == "" {
+				project = args[0]
+			}
 			opts := newOpts{domains: domains, project: project, to: to, public: public, wait: wait}
-			if err := opts.defaults(); err != nil {
+			resolved, err := opts.resolve(domains)
+			if err != nil {
+				output.Global.Err("%s", err)
 				output.Global.Print(output.Result{OK: false, Exit: 1, Message: err.Error()})
 				return err
 			}
-			res := runNew(cmd.Context(), opts)
+			res := runNew(cmd.Context(), resolved)
 			output.Global.Print(output.Result{OK: res.ok, Exit: exitCode(res.ok), Data: res.report, Message: res.errMsg})
 			if !res.ok {
 				return fmt.Errorf("new did not complete: %s", res.errMsg)
@@ -54,9 +67,8 @@ hostnames). Backend: --to portless (default) or --to loopback:<port>.`,
 			return nil
 		},
 	}
-	cmd.Flags().StringArrayVarP(&domains, "domain", "d", nil, "public FQDN to serve (repeat for multi-domain)")
-	cmd.MarkFlagRequired("domain")
-	cmd.Flags().StringVar(&project, "project", "", "project/route name (default: first label of first domain)")
+	cmd.Flags().StringArrayVarP(&domains, "domain", "d", nil, "public FQDN to serve (repeat for multi-domain; default: <project>.<default-domain>)")
+	cmd.Flags().StringVar(&project, "project", "", "project/route name (default: first label of domain, or picked interactively)")
 	cmd.Flags().StringVar(&to, "to", "portless", "backend: 'portless' (default) or 'loopback:<port>'")
 	cmd.Flags().BoolVar(&public, "public", false, "also emit share set-public suggest link")
 	cmd.Flags().BoolVar(&wait, "wait", false, "poll DNS until the CNAME resolves to the target")
@@ -71,29 +83,66 @@ type newOpts struct {
 	wait    bool
 }
 
-func (o *newOpts) defaults() error {
-	if len(o.domains) == 0 {
-		return fmt.Errorf("--domain is required")
-	}
+// resolve fills in missing domain/project via defaults + interactive prompts.
+// At least one of --domain, --project, or args[0] must be provided (or stdin
+// must be a TTY for the interactive picker). Returns resolved opts.
+func (o *newOpts) resolve(flagsDomains []string) (newOpts, error) {
+	out := output.Global
+
+	// Normalize what we have so far.
+	o.domains = flagsDomains
 	for i := range o.domains {
 		o.domains[i] = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(o.domains[i])), ".")
-	}
-	if o.project == "" {
-		// first label of first domain
-		first := o.domains[0]
-		if i := strings.IndexByte(first, '.'); i > 0 {
-			o.project = first[:i]
-		} else {
-			o.project = first
-		}
 	}
 	if o.to == "" {
 		o.to = "portless"
 	}
 	if o.to != "portless" && !strings.HasPrefix(o.to, "loopback:") {
-		return fmt.Errorf("--to must be 'portless' or 'loopback:<port>', got %q", o.to)
+		return *o, fmt.Errorf("--to must be 'portless' or 'loopback:<port>', got %q", o.to)
 	}
-	return nil
+
+	// Case 1: domains given — derive project from first domain (original behavior).
+	if len(o.domains) > 0 {
+		if o.project == "" {
+			first := o.domains[0]
+			if i := strings.IndexByte(first, '.'); i > 0 {
+				o.project = first[:i]
+			} else {
+				o.project = first
+			}
+		}
+		return *o, nil
+	}
+
+	// Case 2: project given (positional arg or --project) but no domain.
+	// Derive FQDN from config's default_domain.
+	if o.project != "" {
+		cfg, _ := loadConfig()
+		if cfg.DefaultDomain == "" {
+			return *o, fmt.Errorf("no --domain given and no default domain set; run: exebox setup --default-domain <apex>")
+		}
+		o.domains = []string{o.project + "." + cfg.DefaultDomain}
+		out.Info("derived domain: %s", o.domains[0])
+		return *o, nil
+	}
+
+	// Case 3: nothing given — interactive project picker (needs a TTY).
+	if out.JSON || !output.IsStdinTerminal() {
+		return *o, fmt.Errorf("--domain or --project required (interactive mode needs a TTY)")
+	}
+	picked, err := pickProjectInteractive()
+	if err != nil {
+		return *o, err
+	}
+	o.project = picked
+
+	cfg, _ := loadConfig()
+	if cfg.DefaultDomain == "" {
+		return *o, fmt.Errorf("no default domain set; run: exebox setup --default-domain <apex>")
+	}
+	o.domains = []string{o.project + "." + cfg.DefaultDomain}
+	out.OK("project: %s  domain: %s", o.project, o.domains[0])
+	return *o, nil
 }
 
 type newReport struct {
@@ -303,6 +352,112 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 
 func writeFile(path, content string, mode os.FileMode) error {
 	return os.WriteFile(path, []byte(content), mode)
+}
+
+// loadConfig reads the persisted config (best-effort).
+func loadConfig() (config.File, error) {
+	p, err := paths()
+	if err != nil {
+		return config.File{}, err
+	}
+	return p.Load()
+}
+
+// pickProjectInteractive scans ~/Code for directories containing a package.json
+// with a dev script, filters out projects already registered in exebox state,
+// and prompts the user to pick one. Returns the chosen project name.
+func pickProjectInteractive() (string, error) {
+	out := output.Global
+
+	p, err := paths()
+	if err != nil {
+		return "", err
+	}
+	registered := map[string]bool{}
+	domains, _ := p.LoadDomains()
+	for _, d := range domains {
+		registered[d.Project] = true
+	}
+
+	projects, err := discoverCodeProjects()
+	if err != nil {
+		return "", fmt.Errorf("scan ~/Code: %w", err)
+	}
+
+	var available []string
+	for _, name := range projects {
+		if !registered[name] {
+			available = append(available, name)
+		}
+	}
+
+	if len(available) == 0 {
+		if len(projects) == 0 {
+			return "", fmt.Errorf("no projects with package.json found in ~/Code")
+		}
+		return "", fmt.Errorf("all projects in ~/Code are already registered")
+	}
+
+	out.Heading("pick a project")
+	for i, name := range available {
+		out.Line(fmt.Sprintf("  %d. %s", i+1, name))
+	}
+	fmt.Fprint(out.ErrW, "pick [1-"+fmt.Sprint(len(available))+"]: ")
+
+	var input string
+	fmt.Fscanln(os.Stdin, &input)
+
+	for i, name := range available {
+		if input == fmt.Sprint(i+1) || strings.EqualFold(input, name) {
+			return name, nil
+		}
+	}
+	return "", fmt.Errorf("invalid selection: %q", input)
+}
+
+// discoverCodeProjects returns directory names under ~/Code that contain a
+// package.json with a dev script, sorted alphabetically.
+func discoverCodeProjects() ([]string, error) {
+	// Avoid encoding/json import in new.go by checking for the dev script
+	// with a lightweight string match — avoids a heavy dependency for a UX nicety.
+	entries, err := os.ReadDir(filepath.Join(homeDir(), "Code"))
+	if err != nil {
+		return nil, err // ~/Code doesn't exist is fine — caller handles empty
+	}
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if strings.HasPrefix(name, ".") {
+			continue
+		}
+		if hasDevScript(filepath.Join(homeDir(), "Code", name, "package.json")) {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
+// hasDevScript checks if package.json contains a "dev" script entry.
+// Uses a lightweight string scan to avoid pulling in encoding/json here.
+func hasDevScript(pkgPath string) bool {
+	data, err := os.ReadFile(pkgPath)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), "\"dev\"")
+}
+
+// homeDir returns the user's home directory or "" on error.
+func homeDir() string {
+	h, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return h
 }
 
 // manualRecordBlock renders the copy-paste manual instructions for non-API providers.
