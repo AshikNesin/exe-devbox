@@ -14,7 +14,7 @@ A CLI that automates bringing up an [exe.dev](https://exe.dev) VM for multi-proj
 
 **2. Per-project domain onboarding** — `exebox new`
 
-- Detects the DNS provider of the apex (Cloudflare / Domain Connect / manual)
+- Detects the DNS provider of the apex (Cloudflare / manual)
 - Adds the `CNAME → <vm>.exe.xyz` (via Cloudflare API automatically via the exe.dev proxy, or via `$CLOUDFLARE_API_TOKEN`, else prints manual instructions)
 - Registers the domain with exe.dev (automatically if an API token is set, else prints the command to run)
 - Writes the nginx server block and reloads
@@ -114,7 +114,6 @@ Browser ──HTTPS──▶ exe.dev proxy ──▶ nginx (:8080)
 `exebox new` detects the apex's provider and acts accordingly:
 
 - **Cloudflare** — automatic via the exe.dev Cloudflare integration (no token needed — credentials injected by the network-edge proxy, discovered at runtime from reflection). Or set `$CLOUDFLARE_API_TOKEN` (needs `Zone.DNS Edit` + `Zone.Read`) for direct API access.
-- **Domain Connect** — detected via `TXT _domainconnect`; prints the apply link (requires template onboarding).
 - **Manual** — prints the exact CNAME record to add at your registrar.
 
 ## exe.dev domain registration

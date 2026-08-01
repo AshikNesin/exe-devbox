@@ -33,10 +33,9 @@ func newNewCmd() *cobra.Command {
 		Use:   "new",
 		Short: "Onboard a new project domain (DNS + exe.dev + nginx route)",
 		Long: `Wire up a public domain to this VM. For each domain it:
-  1. detects the DNS provider of the apex (Cloudflare / Domain Connect / manual)
+  1. detects the DNS provider of the apex (Cloudflare / manual)
   2. adds the CNAME -> <vm>.exe.xyz (Cloudflare API if you have a token, else
-     prints exact manual instructions), with a one-click Domain Connect link
-     where supported
+     prints exact manual instructions)
   3. prints the exe.dev suggest link to register the domain (owner key needed)
   4. writes the nginx server block and reloads nginx
 
@@ -181,11 +180,6 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 		rec := recordReport{Domain: d}
 
 		out.Step("dns: %s  apex=%s  provider=%s", d, r.Apex, r.Provider)
-
-		// Cloudflare Domain Connect link (informational; not one-click without onboarding)
-		if r.IsCloudflare() && r.DCAPI != "" {
-			out.Info("Domain Connect (Cloudflare, needs template onboarding): %s/v2/%s/settings/...", r.DCAPI, r.Apex)
-		}
 
 		switch {
 		case r.IsCloudflare() && cf != nil && cf.Available():

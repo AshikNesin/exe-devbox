@@ -27,7 +27,7 @@ we're removing.
    config at `~/.exebox/nginx`, and discover the VM's identity.
 2. **Per-project domain onboarding** (`exebox new --domain …`) — figure out the
    DNS provider of the target domain, give the user the easiest possible path
-   to add the CNAME (Domain Connect if supported, else manual instructions),
+   to add the CNAME (direct Cloudflare API, else manual instructions),
    then emit the exe.dev command/link to register the domain for this VM.
 
 ---
@@ -43,8 +43,7 @@ we're removing.
   required for the common case.
 - **G3.** `exebox new --domain <fqdn>` determines the authoritative DNS
   provider of the domain's apex and chooses the right CNAME-add strategy:
-  - Cloudflare → Domain Connect flow (with a today-working direct-API fallback).
-  - Any other Domain-Connect-supporting provider → Domain Connect apply URL.
+  - Cloudflare → direct Cloudflare API (token or exe.dev proxy).
   - Unknown / unsupported provider → clear manual instructions with exact
     record values.
 - **G4.** Every `exebox new` run ends by emitting the **exe.dev suggest link**
@@ -97,24 +96,6 @@ route layer so existing `portless run` dev scripts are untouched.
 before workers finish loading new config, so a request fired immediately after
 adding a server block may hit a stale `404`. `exebox`'s `nginx.Reload` retries
 + settles 200ms to close that window (see `internal/nginx/conf.go`).
-
-### Domain Connect reality check
-
-- Domain Connect (DC) is an open standard. A host "supports DC" iff its apex
-  publishes `TXT _domainconnect.<apex>` pointing at the provider's DC API.
-- **Cloudflare supports DC, but only the *synchronous* flow, and only for
-  service providers who have onboarded a signed template**
-  (`syncPubKeyDomain` TXT + a cryptographic signature on every apply URL,
-  which must be the last query param). See
-  https://developers.cloudflare.com/dns/reference/domain-connect/ .
-- Consequence: a standalone CLI **cannot mint a working one-click DC apply URL
-  for Cloudflare** without first (a) publishing a template to the
-  `Domain-Connect/Templates` repo and (b) emailing Cloudflare to onboard it.
-- This PRD therefore treats *real* one-click DC as a **future/onboarding-gated**
-  capability, and ships a **today-working fallback** for Cloudflare (direct API
-  apply if the user provides a token) plus **manual** for everyone else.
-
----
 
 ## 4. Architecture recap
 
@@ -278,9 +259,7 @@ exebox new -d new-app.devbox.nesin.io \
 - `dig NS <apex>` → nameservers.
 - Classify:
   - NS contains `*.cloudflare.com` → **provider = cloudflare**.
-  - else `dig TXT _domainconnect.<apex>`:
-    - present → **provider = DC-capable**, record the DC API URL.
-    - absent → **provider = manual**.
+  - else → **provider = manual**.
 
 **Step B — Add the CNAME (strategy by provider).**
 
@@ -294,17 +273,10 @@ The CNAME to add is always:
 | TTL | `auto` / `300` |
 | Proxy | DNS-only (off) — proxying adds TLS/CNAME-chain quirks |
 
-- **Cloudflare:**
-  1. Construct the **Domain Connect synchronous apply URL** for documentation
-  / future use (format below). Print it, clearly marked as
-  *"requires a one-time exebox template onboarding with Cloudflare; not
-  one-click yet"*.
-  2. **Today-working path:** if `CLOUDFLARE_API_TOKEN` (or token in config) is
+- **Cloudflare:** if `CLOUDFLARE_API_TOKEN` (or token in config) is
   set → resolve the zone for the apex via the Cloudflare API
   (`/zones?name=<apex>`), create/update the CNAME record directly, print
   success. If no token → fall through to manual instructions (Step C).
-- **Other DC-capable provider:** print the provider's DC apply URL (best-effort
-  template) AND manual instructions.
 - **Manual / unknown:** go straight to Step C.
 
 **Step C — Manual instructions (always shown unless fully automated).**
@@ -357,22 +329,6 @@ emit both a suggest link *and* a fallback `ssh exe.dev …` shell command.
 **Step F — (optional) HMR hint.** If `--to portless`, print the env var to set
 in the project launcher so Vite HMR works through the proxy (ref doc §4):
 `VITE_HMR_URL=<domain>`. (v1 just prints it; doesn't write the launcher.)
-
-### 7.3 Domain Connect apply URL format (reference)
-
-Synchronous apply, provider-side:
-```
-https://<dcApiUrl>/v2/<apex>/settings/<providerId>/<serviceId>/apply
-  ?host=<host-label>&pointsTo=<cname-target>&TTL=300
-  &sig=<base64url-signature>&key=<key-selector>
-```
-- `<dcApiUrl>` for Cloudflare = `api.cloudflare.com/client/v4/dns/domainconnect`
-  (from `TXT _domainconnect.<apex>`).
-- `sig` must be **last**; verified against a public key in `TXT` at the
-  template's `syncPubKeyDomain`. → unusable without onboarding. Hence the
-  direct-API fallback in Step B.
-
----
 
 ## 8. Supporting commands
 
@@ -502,7 +458,6 @@ suggest link so the user can apply it in one click.
 
 ## 13. Out of scope / future
 
-- Real one-click Domain Connect (needs template onboarding with Cloudflare).
 - Managing project dev servers / HMR launcher wiring (beyond printing hints).
 - Multi-VM / fleet management.
 - GUI.
