@@ -31,6 +31,9 @@ func installedVersion(bin string) string {
 	return strings.TrimSpace(string(out))
 }
 
+// VersionOf is the exported wrapper for installedVersion.
+func VersionOf(bin string) string { return installedVersion(bin) }
+
 // onPath reports whether a binary is on $PATH.
 func onPath(bin string) bool {
 	_, err := exec.LookPath(bin)
@@ -69,6 +72,22 @@ func InstallPortless(ctx context.Context) error {
 	cmd := system.AsRoot("npm", "i", "-g", "portless")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("npm i -g portless: %w: %s", err, out)
+	}
+	return nil
+}
+
+// InstallPnpm runs `npm i -g pnpm` if pnpm is not already on PATH.
+// Requires node + npm (install via InstallNode first).
+func InstallPnpm(ctx context.Context) error {
+	if onPath("pnpm") {
+		return nil
+	}
+	if !onPath("npm") {
+		return fmt.Errorf("npm not found — install Node.js first (InstallNode)")
+	}
+	cmd := system.AsRoot("npm", "i", "-g", "pnpm")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("npm i -g pnpm: %w: %s", err, out)
 	}
 	return nil
 }

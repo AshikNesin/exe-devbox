@@ -127,7 +127,7 @@ func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupRes
 	}
 
 	// 2. install deps
-	s = out.Spinner("installing dependencies (node LTS, portless, nginx)")
+	s = out.Spinner("installing dependencies (node LTS, pnpm, portless, nginx)")
 	nodeV, err := deps.InstallNode(ctx, false)
 	if err != nil {
 		s.Fail("node: %s", err)
@@ -145,6 +145,15 @@ func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupRes
 	}
 	step("portless bin", "ok", "installed")
 	out.OK("portless installed")
+
+	if err := deps.InstallPnpm(ctx); err != nil {
+		out.Err("pnpm: %s", err)
+		step("pnpm", "fail", err.Error())
+		return setupResult{report: report, ok: false, errMsg: "pnpm: " + err.Error()}
+	}
+	pnpmV := deps.VersionOf("pnpm")
+	step("pnpm", "ok", pnpmV)
+	out.OK("pnpm %s", pnpmV)
 
 	if err := deps.InstallNginx(ctx); err != nil {
 		out.Err("nginx: %s", err)
