@@ -3,3 +3,4 @@
 *.test
 /exebox-v*
 /release-build/
+/releases/

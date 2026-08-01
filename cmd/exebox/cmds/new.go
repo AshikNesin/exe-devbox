@@ -17,7 +17,6 @@ import (
 	"github.com/ashiknesin/exebox/internal/output"
 	"github.com/ashiknesin/exebox/internal/portless"
 	"github.com/ashiknesin/exebox/internal/reflection"
-	"github.com/ashiknesin/exebox/internal/system"
 	"github.com/spf13/cobra"
 )
 
@@ -110,7 +109,7 @@ type newReport struct {
 
 type recordReport struct {
 	Domain string `json:"domain"`
-	Action string `json:"action"` // "created" | "updated" | "manual" | "dc-link"
+	Action string `json:"action"` // "created" | "updated" | "manual"
 	Detail string `json:"detail"`
 }
 
@@ -299,7 +298,6 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 		}
 	}
 
-	_ = system.Run // keep import
 	return newResult{report: report, ok: true}
 }
 

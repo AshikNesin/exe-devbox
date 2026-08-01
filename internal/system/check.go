@@ -48,13 +48,3 @@ func PortListening(port int) Check {
 	_ = conn.Close()
 	return Check{Name: fmt.Sprintf("port :%d listening", port), Pass: true, Detail: "127.0.0.1:" + strconv.Itoa(port)}
 }
-
-// Run is sugar to run a shell command and return (combined output, err).
-func Run(name string, args ...string) ([]byte, error) {
-	return exec.Command(name, args...).CombinedOutput()
-}
-
-// RunBash runs a one-line command via bash (for pipes/redirs in install steps).
-func RunBash(script string) ([]byte, error) {
-	return exec.Command("bash", "-c", script).CombinedOutput()
-}

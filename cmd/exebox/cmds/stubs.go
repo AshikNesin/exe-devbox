@@ -7,10 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// stubs for commands implemented in later milestones. They print a
-// "not implemented yet" message and exit 1 so the CLI compiles end-to-end
-// during early milestones.
-
+// stub returns a command that prints a "not implemented yet" message.
+// Used for planned-but-unbuilt subcommands so the CLI compiles and the
+// help tree lists them.
 func newNginxCmd() *cobra.Command {
 	return stub("nginx", "Manage the exebox-managed nginx config (show/edit/reload)")
 }

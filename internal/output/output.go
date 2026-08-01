@@ -98,15 +98,6 @@ func (m *Mode) Line(s string) {
 	m.fprintln(m.ErrW, s)
 }
 
-// Plain prints to stdout (for real payload in human mode: e.g. a generated URL
-// the user pipes/ copies). Suppressed in JSON mode where it'd corrupt the envelope.
-func (m *Mode) Plain(format string, a ...any) {
-	if m.JSON {
-		return
-	}
-	fmt.Fprintf(m.OutW, format, a...)
-}
-
 func (m *Mode) fprintln(w io.Writer, s string) {
 	fmt.Fprintln(w, s)
 }
@@ -152,11 +143,10 @@ func (m *Mode) c(color, s string) string {
 // Bold wraps text in bold (no color).
 func (m *Mode) Bold(s string) string { return m.c(bold, s) }
 
-// Green/Red/Yellow/Cyan colorize a string when color is on.
-func (m *Mode) Green(s string) string  { return m.c(green, s) }
-func (m *Mode) Red(s string) string    { return m.c(red, s) }
-func (m *Mode) Yellow(s string) string { return m.c(yellow, s) }
-func (m *Mode) Cyan(s string) string   { return m.c(cyan, s) }
+// Green/Red/Cyan colorize a string when color is on.
+func (m *Mode) Green(s string) string { return m.c(green, s) }
+func (m *Mode) Red(s string) string   { return m.c(red, s) }
+func (m *Mode) Cyan(s string) string  { return m.c(cyan, s) }
 
 func isTerminal(f *os.File) bool {
 	fi, err := f.Stat()

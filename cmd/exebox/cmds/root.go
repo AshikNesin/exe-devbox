@@ -36,9 +36,6 @@ See ` + "`exebox <cmd> --help`" + ` and docs/PRD.md.`,
 			if gflags.JSON {
 				output.Global.Color = false
 			}
-			if gflags.Verbose {
-				// verbose currently only re-enables color in weird combos; placeholder.
-			}
 			return nil
 		},
 	}

@@ -14,6 +14,3 @@ func AsRoot(cmd string, args ...string) *exec.Cmd {
 	}
 	return exec.Command("sudo", append([]string{"--", cmd}, args...)...)
 }
-
-// NeedRoot reports whether we'd need sudo (i.e. not currently root).
-func NeedRoot() bool { return os.Geteuid() != 0 }

@@ -64,12 +64,3 @@ func Investigate(domain string) (Result, error) {
 	}
 	return r, nil
 }
-
-// Record is the CNAME to add (what exebox prints/creates).
-type Record struct {
-	Host    string // name relative to apex, e.g. "new-app.devbox"
-	Type    string // "CNAME"
-	Target  string // <vm>.exe.xyz
-	TTL     int    // seconds; 300 default
-	Proxied bool   // Cloudflare orange-cloud; we default false (DNS-only)
-}

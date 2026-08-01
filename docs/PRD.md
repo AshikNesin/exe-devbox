@@ -446,13 +446,17 @@ suggest link so the user can apply it in one click.
   discovery + `--json`. (shipped)
 - ✅ **M2 — `exebox setup`:** dep install (node/portless/nginx), portless daemon,
   `~/.exebox/nginx` management + Caddy handoff, share-port suggest link.
-  (shipped; used for the live Caddy→nginx cutover)
+  (shipped)
 - ✅ **M3 — `exebox new`:** apex/provider detection, manual flow + suggest link +
   nginx server block write + reload. Multi-domain + loopback backends.
-  (shipped; live for `devbox.nesin.io` + `devbox.ashiknesin.com` → Shelley)
-- ⏳ **M4 — Cloudflare API path:** token-based CNAME apply; DC URL documented.
-- ⏳ **M5 — Polish:** ✅ `status` + `dev` (HMR-aware dev launcher) shipped; `nginx`
-  subcmds, `doctor` table, docs remaining.
+  (shipped)
+- ✅ **M4 — Cloudflare API path:** token-based + exe.dev proxy CNAME apply.
+  (shipped; Domain Connect was evaluated and removed — unusable without
+  provider template onboarding)
+- ✅ **M5 — Polish:** `status` + `dev` (HMR-aware dev launcher) + `update` +
+  push notifications (notify integration). (shipped)
+- ⏳ **M6 — Remaining:** `nginx` subcmds (show/edit/reload), `doctor` table
+  formatting polish.
 
 ---
 
