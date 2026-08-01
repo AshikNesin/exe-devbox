@@ -187,8 +187,9 @@ func runDev(o devOpts) devResult {
 	// Re-parent so it survives this CLI exit; we don't wait on it.
 	_ = devCmd.Process.Release()
 
+	url := "https://" + hmrHost + "/"
 	out.OK("%s dev started (pid %d, runner=%s)", o.project, devCmd.Process.Pid, runner)
-	out.Info("public URL: https://%s/", hmrHost)
+	out.Info("public URL: %s", hyperlink(url, url))
 	out.Info("HMR target: wss://%s:443", hmrHost)
 	out.Info("log: %s", logPath)
 	out.Info("wait ~15-20s, then: exebox status")
@@ -309,4 +310,13 @@ func lookPathWith(name, extraDir string) (string, error) {
 		}
 	}
 	return exec.LookPath(name)
+}
+
+// hyperlink wraps text in an OSC 8 terminal hyperlink (clickable in modern
+// terminals). Returns plain text when not a TTY.
+func hyperlink(url, text string) string {
+	if !output.Global.Color {
+		return text
+	}
+	return "\033]8;;" + url + "\033\\" + text + "\033]8;;\033\\"
 }
