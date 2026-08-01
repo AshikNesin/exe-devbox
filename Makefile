@@ -51,7 +51,7 @@ clean:
 # Usage: make release VERSION=v0.2.0
 VERSION ?= 
 RELEASE_DIR := release-build
-GITHUB_API ?= https://api.github.com
+GITHUB_API ?= https://github.int.exe.xyz/api/v3
 GITHUB_REPO ?= AshikNesin/exebox
 
 release: scripts/release-upload.py
@@ -66,4 +66,4 @@ release:
 	@git tag -a $(VERSION) -m "$(VERSION)"
 	@git push origin $(VERSION)
 	@echo "✓ release $(VERSION) binary uploaded + tag pushed"
-	@echo "  download: https://github.com/$(GITHUB_REPO)/raw/main/releases/$(VERSION)/exebox-linux-amd64"
+	@echo "  download: https://github.com/$(GITHUB_REPO)/releases/download/$(VERSION)/exebox-linux-amd64"

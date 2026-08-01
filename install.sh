@@ -16,11 +16,11 @@ if [ -z "$VERSION" ]; then
 fi
 echo "→ installing exebox $VERSION"
 
-# Download binary via raw.githubusercontent.com
+# Download binary from GitHub Release assets
 DEST="${DEST:-$HOME/.local/bin/exebox}"
 mkdir -p "$(dirname "$DEST")"
 curl -sfL -o "$DEST" \
-  "https://raw.githubusercontent.com/$REPO/main/releases/$VERSION/exebox-linux-amd64"
+  "https://github.com/$REPO/releases/download/$VERSION/exebox-linux-amd64"
 chmod +x "$DEST"
 
 echo "✓ installed to $DEST"

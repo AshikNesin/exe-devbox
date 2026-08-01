@@ -14,7 +14,7 @@ import (
 )
 
 const githubLatestURL = "https://api.github.com/repos/AshikNesin/exebox/releases/latest"
-const rawBinaryURL = "https://raw.githubusercontent.com/AshikNesin/exebox/main/releases/%s/exebox-linux-amd64"
+const rawBinaryURL = "https://github.com/AshikNesin/exebox/releases/download/%s/exebox-linux-amd64"
 
 // appVersion is injected from root.go at NewRoot time.
 var appVersion string
