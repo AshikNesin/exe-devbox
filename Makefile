@@ -66,4 +66,4 @@ release:
 	@git tag -a $(VERSION) -m "$(VERSION)"
 	@git push origin $(VERSION)
 	@echo "✓ release $(VERSION) binary uploaded + tag pushed"
-	@echo "  download: https://github.com/$(GITHUB_REPO)/releases/download/$(VERSION)/exebox-linux-amd64"
+	@echo "  download: https://raw.githubusercontent.com/$(GITHUB_REPO)/releases/releases/$(VERSION)/exebox-linux-amd64"
