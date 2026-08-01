@@ -31,7 +31,8 @@ func newNewCmd() *cobra.Command {
 		wait     bool
 	)
 	cmd := &cobra.Command{
-		Use:   "new",
+		Use:     "new",
+		Aliases: []string{"add"},
 		Short: "Onboard a new project domain (DNS + exe.dev + nginx route)",
 		Long: `Wire up a public domain to this VM. For each domain it:
   1. detects the DNS provider of the apex (Cloudflare / manual)
