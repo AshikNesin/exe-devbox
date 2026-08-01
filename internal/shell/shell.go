@@ -1,7 +1,8 @@
 // Package shell handles shell detection and auto-installation of completion
-// scripts. It detects which shell the user is running (bash or zsh), generates
-// the appropriate completion script via cobra, and injects a source line into
-// the user's rc file (~/.bashrc or ~/.zshrc).
+// scripts. It generates completion scripts for all supported shells (bash and
+// zsh), writes them to ~/.local/share/exebox/, and injects a source line into
+// the corresponding rc file (~/.bashrc and ~/.zshrc) whenever that rc file
+// already exists or is the detected login shell.
 package shell
 
 import (
@@ -13,13 +14,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CompletionResult holds what happened during auto-completion setup.
+// supportedShells is the fixed list of shells exebox installs completion for.
+var supportedShells = []string{"bash", "zsh"}
+
+// CompletionResult holds what happened during auto-completion setup for one shell.
 type CompletionResult struct {
-	Shell     string // "bash" or "zsh"
+	Shell      string // "bash" or "zsh"
 	ScriptPath string // where the completion script was written
-	RCFile    string // which rc file was patched
-	RCLine    string // the source line added
-	AlreadyOK bool   // rc file already had the source line
+	RCFile     string // which rc file was patched ("" if skipped)
+	RCLine     string // the source line added
+	AlreadyOK  bool   // rc file already had the source line
+	Skipped    bool   // true if the rc file did not exist and was not created
 }
 
 // DetectedShell returns the user's shell type: "bash", "zsh", or "".
@@ -44,18 +49,36 @@ func DetectedShell() string {
 	return "bash" // default assumption
 }
 
-// InstallCompletion generates and installs shell completion for the given
-// cobra root command. It:
-//  1. Generates the completion script for the detected shell.
-//  2. Writes it to ~/.local/share/exebox/completion.{sh,zsh}.
-//  3. Adds a source line to ~/.bashrc or ~/.zshrc (idempotent).
-func InstallCompletion(root *cobra.Command) (*CompletionResult, error) {
-	sh := DetectedShell()
+// InstallCompletion generates and installs shell completion for every supported
+// shell (bash and zsh). For each shell it:
+//  1. Generates the completion script via cobra.
+//  2. Writes it to ~/.local/share/exebox/completion.bash (or _exebox for zsh).
+//  3. Adds a source line to ~/.bashrc / ~/.zshrc (idempotent) when that rc file
+//     already exists or is the detected login shell.
+//
+// This ensures both shells work regardless of which the user is currently in.
+// The detected shell is always patched even if its rc file is missing (created).
+func InstallCompletion(root *cobra.Command) ([]CompletionResult, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("find home dir: %w", err)
 	}
+	detected := DetectedShell()
+	var results []CompletionResult
+	for _, sh := range supportedShells {
+		res, err := installForShell(root, sh, home, sh == detected)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, *res)
+	}
+	return results, nil
+}
 
+// installForShell handles a single shell. If force is true (the detected login
+// shell), the rc file is created if missing; otherwise a missing rc file means
+// the shell is skipped.
+func installForShell(root *cobra.Command, sh, home string, force bool) (*CompletionResult, error) {
 	// 1. Determine paths
 	var scriptPath, rcFile, rcLine string
 	switch sh {
@@ -89,31 +112,34 @@ func InstallCompletion(root *cobra.Command) (*CompletionResult, error) {
 		}
 	}
 
-	// 3. Add source line to rc file (idempotent)
-	alreadyOK := false
-	content, _ := os.ReadFile(rcFile)
-	// Check if we've already added it (match the script path, not the exact line,
-	// since the user might have edited it).
-	if strings.Contains(string(content), scriptPath) {
-		alreadyOK = true
+	// 3. Decide whether to patch the rc file.
+	res := &CompletionResult{
+		Shell:      sh,
+		ScriptPath: scriptPath,
+		RCFile:     rcFile,
+		RCLine:     rcLine,
 	}
-	if !alreadyOK {
-		// Append with a newline if the file doesn't end with one.
-		if len(content) > 0 && !strings.HasSuffix(string(content), "\n") {
-			content = append(content, '\n')
-		}
-		header := "# exebox shell completion\n"
-		content = append(content, []byte(header+rcLine+"\n")...)
-		if err := os.WriteFile(rcFile, content, 0o644); err != nil {
-			return nil, fmt.Errorf("write %s: %w", filepath.Base(rcFile), err)
-		}
+	content, _ := os.ReadFile(rcFile)
+	if strings.Contains(string(content), scriptPath) {
+		res.AlreadyOK = true
+		return res, nil
+	}
+	// If the rc file does not exist and this is not the detected login shell,
+	// skip patching rather than creating a stray rc file.
+	if _, statErr := os.Stat(rcFile); statErr != nil && !force {
+		res.Skipped = true
+		res.RCFile = ""
+		return res, nil
 	}
 
-	return &CompletionResult{
-		Shell:     sh,
-		ScriptPath: scriptPath,
-		RCFile:    rcFile,
-		RCLine:    rcLine,
-		AlreadyOK: alreadyOK,
-	}, nil
+	// Append the source line (idempotent).
+	if len(content) > 0 && !strings.HasSuffix(string(content), "\n") {
+		content = append(content, '\n')
+	}
+	header := "# exebox shell completion\n"
+	content = append(content, []byte(header+rcLine+"\n")...)
+	if err := os.WriteFile(rcFile, content, 0o644); err != nil {
+		return nil, fmt.Errorf("write %s: %w", filepath.Base(rcFile), err)
+	}
+	return res, nil
 }

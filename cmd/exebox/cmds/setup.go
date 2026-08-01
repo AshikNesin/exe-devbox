@@ -244,14 +244,24 @@ func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupRes
 		_ = n.Send(ctx, "✅ Setup complete", fmt.Sprintf("%s is ready on port %d", id.Name, opts.nginxPort))
 	}
 
-	// Auto-install shell completion (bash or zsh, detected automatically).
-	if cr, err := shell.InstallCompletion(root); err != nil {
+	// Auto-install shell completion for all supported shells (bash + zsh).
+	// Scripts are always generated; rc files are patched only where they
+	// already exist (or for the detected login shell).
+	results, err := shell.InstallCompletion(root)
+	if err != nil {
 		out.Warn("shell completion: %s", err)
-	} else if cr.AlreadyOK {
-		out.OK("shell completion ready (%s)", cr.Shell)
 	} else {
-		out.OK("shell completion installed (%s)", cr.Shell)
-		out.Info("open a new shell or: source ~/%s", filepath.Base(cr.RCFile))
+		for _, cr := range results {
+			switch {
+			case cr.Skipped:
+				// rc file absent and not the login shell; nothing to report.
+			case cr.AlreadyOK:
+				out.OK("shell completion ready (%s)", cr.Shell)
+			default:
+				out.OK("shell completion installed (%s)", cr.Shell)
+				out.Info("open a new shell or: source ~/%s", filepath.Base(cr.RCFile))
+			}
+		}
 	}
 
 	// Subtle next-step hint: domain registration.
