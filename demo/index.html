@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>exebox — From zero VM to serving traffic in minutes</title>
+<title>exebox: From zero VM to serving traffic in minutes</title>
 <meta name="description" content="exebox automates multi-project development behind an nginx + portless reverse proxy on your exe.dev VM.">
 <style>
 /* ═══════════════════════════════════════════════════
@@ -675,7 +675,7 @@ footer {
       v0.5.0 · Production-ready on exe.dev
     </div>
     <h1>From zero VM to<br><span class="grad">serving traffic</span> in minutes.</h1>
-    <p class="hero-sub">Spin up an exe.dev VM and turn it into a multi-project devbox in seconds. exebox handles DNS, public domains, reverse proxying, and HMR — so every project just works.</p>
+    <p class="hero-sub">Spin up an exe.dev VM and turn it into a multi-project devbox in seconds. exebox handles DNS, public domains, reverse proxying, and HMR, so every project just works.</p>
     <div class="hero-cta">
       <a href="#walkthrough" class="btn btn-primary" data-magnetic>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -687,7 +687,7 @@ footer {
     <div class="hero-term term">
       <div class="term-bar">
         <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
-        <span class="term-title">exedev@nesins-devbox — exebox</span>
+        <span class="term-title">exedev@nesins-devbox: exebox</span>
       </div>
       <div class="term-body" id="heroTermBody"></div>
     </div>
@@ -699,25 +699,25 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ The Problem</div>
     <h2 class="section-title">You just want a devbox.<br>Not a infrastructure project.</h2>
-    <p class="section-desc">An exe.dev VM gives you an instant cloud devbox. But the moment you want to work on <strong>multiple projects</strong> — each with its own public domain, DNS, proxy config, and working HMR — you sink hours into yak-shaving instead of writing code. exebox turns that multi-hour setup into a few seconds.</p>
+    <p class="section-desc">An exe.dev VM gives you an instant cloud devbox. But the moment you want to work on <strong>multiple projects</strong>, each with its own public domain, DNS, proxy config, and working HMR, you sink hours into yak-shaving instead of writing code. exebox turns that multi-hour setup into a few seconds.</p>
 
     <div class="problem-grid">
       <div class="problem-card">
         <h3><span class="badge-icon red">✗</span> The manual way</h3>
         <ul class="problem-list">
           <li><span class="num red">1</span> Spin up a VM, then spend the next two hours making it usable for more than one project.</li>
-          <li><span class="num red">2</span> Install Node.js, portless, and nginx — then write a Host-rewriting reverse proxy config by hand.</li>
+          <li><span class="num red">2</span> Install Node.js, portless, and nginx. Then write a Host-rewriting reverse proxy config by hand.</li>
           <li><span class="num red">3</span> For <em>every</em> project: add a DNS CNAME, register the domain with exe.dev, write an nginx server block.</li>
-          <li><span class="num red">4</span> Debug Vite HMR — WebSocket connections silently fail through the proxy.</li>
+          <li><span class="num red">4</span> Debug Vite HMR: WebSocket connections silently fail through the proxy.</li>
           <li><span class="num red">5</span> Repeat steps 3–4 every time you start a new project. Hours wasted, every time.</li>
         </ul>
       </div>
       <div class="problem-card">
         <h3><span class="badge-icon green">✓</span> With exebox</h3>
         <ul class="problem-list">
-          <li><span class="num green">1</span> <code>exebox setup</code> — one command turns a fresh VM into a multi-project devbox.</li>
-          <li><span class="num green">2</span> <code>exebox new groot</code> — DNS, exe.dev registration, nginx route — done in seconds.</li>
-          <li><span class="num green">3</span> <code>exebox dev groot</code> — launches the dev server with HMR that works through the proxy.</li>
+          <li><span class="num green">1</span> <code>exebox setup</code>: one command turns a fresh VM into a multi-project devbox.</li>
+          <li><span class="num green">2</span> <code>exebox new groot</code>: DNS, exe.dev registration, nginx route. Done in seconds.</li>
+          <li><span class="num green">3</span> <code>exebox dev groot</code>: launches the dev server with HMR that works through the proxy.</li>
           <li><span class="num green">4</span> Add a new project anytime with a single command. No repeating the whole setup.</li>
           <li><span class="num green">5</span> <code>exebox doctor</code> validates the entire stack. Push notifications keep you informed.</li>
         </ul>
@@ -731,7 +731,7 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ Guided Tour</div>
     <h2 class="section-title">Four commands<br>to production.</h2>
-    <p class="section-desc">Click through each step to watch exebox bring a fresh exe.dev VM online — from installing dependencies to launching a live dev server.</p>
+    <p class="section-desc">Click through each step to watch exebox bring a fresh exe.dev VM online, from installing dependencies to launching a live dev server.</p>
 
     <div class="walk-grid">
       <div class="steps">
@@ -746,7 +746,7 @@ footer {
           <div class="step-num-circle">2</div>
           <div class="step-body">
             <div class="step-title-text">exebox new groot</div>
-            <div class="step-desc-text">Onboard a project domain — DNS + exe.dev + nginx</div>
+            <div class="step-desc-text">Onboard a project domain: DNS + exe.dev + nginx</div>
           </div>
         </button>
         <button class="step-btn" data-step="2">
@@ -768,7 +768,7 @@ footer {
       <div class="term">
         <div class="term-bar">
           <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
-          <span class="term-title">walkthrough — exebox</span>
+          <span class="term-title">walkthrough: exebox</span>
           <button id="replayBtn" class="replay-btn">↻ replay</button>
         </div>
         <div class="term-body" id="walkTermBody"></div>
@@ -825,7 +825,7 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ Capabilities</div>
     <h2 class="section-title">Everything wired up.</h2>
-    <p class="section-desc">Every painful manual step from the multi-project setup — automated, idempotent, and production-tested on a live exe.dev VM.</p>
+    <p class="section-desc">Every painful manual step from the multi-project setup: automated, idempotent, and production-tested on a live exe.dev VM.</p>
 
     <div class="cards reveal-stagger">
       <div class="feature-card">
@@ -851,7 +851,7 @@ footer {
       <div class="feature-card">
         <div class="emoji">🩺</div>
         <h3>Health checks</h3>
-        <p><code>exebox doctor</code> validates reflection, dependencies, services, and ports — so you know the stack is healthy at a glance.</p>
+        <p><code>exebox doctor</code> validates reflection, dependencies, services, and ports, so you know the stack is healthy at a glance.</p>
       </div>
       <div class="feature-card">
         <div class="emoji">🔄</div>
@@ -867,14 +867,14 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ Quick Start</div>
     <h2 class="section-title">Get running in<br>60 seconds.</h2>
-    <p class="section-desc">Install exebox, run setup once, then onboard and launch projects with single commands. No Go toolchain required — just curl the binary.</p>
+    <p class="section-desc">Install exebox, run setup once, then onboard and launch projects with single commands. No Go toolchain required. Just curl the binary.</p>
 
     <div class="gs-list">
       <div class="gs-step">
         <div class="gs-num">1</div>
         <div class="gs-content">
           <h4>Install exebox</h4>
-          <p>Grab the latest release binary — no Go needed:</p>
+          <p>Grab the latest release binary. No Go needed:</p>
           <div class="code-block">
 <span class="code-line"><span class="c-cmt"># From release binary (recommended)</span></span>
 <span class="code-line"><span class="c-cmd">curl</span> <span class="c-arg">-sfL</span> https://raw.githubusercontent.com/AshikNesin/exebox/main/install.sh <span class="c-flag">|</span> <span class="c-cmd">bash</span></span>
@@ -897,7 +897,7 @@ footer {
         <div class="gs-num">3</div>
         <div class="gs-content">
           <h4>Onboard a project</h4>
-          <p>Wires DNS (CNAME → your-vm.exe.xyz), registers with exe.dev, writes the nginx server block, and reloads — all in one command.</p>
+          <p>Wires DNS (CNAME → your-vm.exe.xyz), registers with exe.dev, writes the nginx server block, and reloads. All in one command.</p>
           <div class="code-block">
 <span class="code-line"><span class="c-cmt"># Derives myapp.example.com from your default domain</span></span>
 <span class="code-line"><span class="c-cmd">exebox</span> new <span class="c-str">myapp</span></span>
@@ -938,7 +938,7 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ Try it</div>
     <h2 class="section-title">Interactive terminal.</h2>
-    <p class="section-desc">Run any exebox command. Click a chip below — the simulated CLI responds just like the real thing.</p>
+    <p class="section-desc">Run any exebox command. Click a chip below: the simulated CLI responds just like the real thing.</p>
 
     <div class="chips">
       <button class="chip quick" data-cmd="exebox setup --default-domain nesin.io">exebox setup</button>
@@ -952,7 +952,7 @@ footer {
     <div class="term">
       <div class="term-bar">
         <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
-        <span class="term-title">exedev@nesins-devbox — interactive</span>
+        <span class="term-title">exedev@nesins-devbox: interactive</span>
       </div>
       <div class="term-body" id="intTermBody"></div>
     </div>
@@ -1211,7 +1211,7 @@ document.getElementById('replayBtn').addEventListener('click', () => {
 const intBody = document.getElementById('intTermBody');
 let intBusy = false;
 function seedInt() {
-  intBody.innerHTML = `<div><span class="t-dim"># exebox interactive demo — click a chip above</span></div>`;
+  intBody.innerHTML = `<div><span class="t-dim"># exebox interactive demo. Click a chip above.</span></div>`;
   intBody.innerHTML += `<div class="cursor-line"><span class="t-prompt">exedev@nesins-devbox</span><span class="t-dim">:</span><span class="t-acc">~</span><span class="t-dim">$</span> <span class="cursor"></span></div>`;
 }
 async function runInteractive(cmd) {
