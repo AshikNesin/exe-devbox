@@ -1148,27 +1148,32 @@ async function runSim(el, cmd) {
 }
 
 // ═══ Hero auto-play ═══
-let heroActive = true;
+let heroVisible = true;
+let heroRunning = false;
 async function heroLoop() {
+  if (heroRunning) return;       // prevent duplicate loops
+  heroRunning = true;
   const el = document.getElementById('heroTermBody');
   const seq = ['exebox setup --default-domain nesin.io', 'exebox new groot', 'exebox dev groot'];
-  while (heroActive) {
+  while (heroVisible) {
     el.innerHTML = '';
     for (const cmd of seq) {
-      if (!heroActive) return;
+      if (!heroVisible) break;
       await runSim(el, cmd);
       await sleep(3500);
     }
+    if (!heroVisible) break;
     await sleep(5000);
   }
+  heroRunning = false;
 }
 
 // Pause hero terminal when scrolled out of view
 const heroTermEl = document.getElementById('heroTermBody');
 const heroObserver = new IntersectionObserver(entries => {
   entries.forEach(e => {
-    if (!e.isIntersecting && heroActive) { heroActive = false; }
-    else if (e.isIntersecting && !heroActive) { heroActive = true; heroLoop(); }
+    heroVisible = e.isIntersecting;
+    if (heroVisible && !heroRunning) heroLoop();
   });
 }, { threshold: 0.2 });
 heroObserver.observe(heroTermEl);
@@ -1289,7 +1294,6 @@ mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => 
 
 // ═══ Boot ═══
 seedInt();
-setTimeout(() => heroLoop(), 500);
 setTimeout(() => runWalkthrough(0), 900);
 animatePackets();
 </script>
