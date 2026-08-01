@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.1] - 2025-08-01
+
+### Fixed
+- Shell completion is now installed for **both** bash and zsh during `exebox setup`. Previously only the detected login shell (`$SHELL`) was patched, so zsh users on a bash-default VM got no completion. Scripts are now generated for every supported shell and the rc file is patched wherever it exists.
+
 ## [v0.5.0] - 2025-08-01
 
 ### Added
