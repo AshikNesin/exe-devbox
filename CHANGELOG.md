@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.6] - 2025-08-01
+
+### Added
+- `exebox dev` now infers the project name from the nearest `package.json` — reads the `"name"` field (falls back to directory name). Works from anywhere in the project tree, so `exebox dev` just works without arguments when run inside a project.
+
 ## [v0.5.5] - 2025-08-01
 
 ### Fixed
