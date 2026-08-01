@@ -12,6 +12,7 @@ package exeapi
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -39,19 +40,36 @@ func (e *Error) Error() string {
 	}
 }
 
+// AppError is an application-level error returned by the exe.dev API inside
+// an otherwise-successful HTTP 200 response body (as JSON). The API returns
+// 200 + {"error":"..."} for failures like DNS validation.
+type AppError struct {
+	Domain string
+	Reason string // the "error" field value
+}
+
+func (e *AppError) Error() string {
+	if e.Domain != "" {
+		return fmt.Sprintf("exe.dev: %s: %s", e.Domain, e.Reason)
+	}
+	return "exe.dev: " + e.Reason
+}
+
 // Retryable reports whether an error is worth retrying. Auth failures
-// (401/403) are permanent; everything else (DNS propagation, 5xx, network
-// blips) is treated as transient.
+// (401/403) are permanent; DNS propagation and other app/transient errors
+// are retried.
 func Retryable(err error) bool {
 	var ae *Error
 	if errors.As(err, &ae) {
 		return ae.Status != http.StatusUnauthorized && ae.Status != http.StatusForbidden
 	}
-	return true // network errors etc.
+	return true // network errors, AppError (DNS), etc.
 }
 
-// execEndpoint is the exe.dev HTTPS API.
-const execEndpoint = "https://exe.dev/exec"
+// execEndpoint is the exe.dev HTTPS API (overridable for tests).
+var execEndpoint = "https://exe.dev/exec"
+
+func setExecEndpoint(u string) { execEndpoint = u }
 
 // Client calls the exe.dev exec API with a bearer token.
 type Client struct {
@@ -97,7 +115,23 @@ func (c *Client) Exec(cmd string) (string, error) {
 }
 
 // DomainAdd registers a custom domain with exe.dev via the HTTPS API.
-// Returns the API response text.
+// Returns the API response text. An HTTP-level error is wrapped as *Error;
+// an application-level failure (HTTP 200 with an "error" field in the JSON
+// body, e.g. DNS not pointing to the VM) is wrapped as *AppError so callers
+// can retry it.
 func (c *Client) DomainAdd(vm, domain string) (string, error) {
-	return c.Exec(fmt.Sprintf("domain add %s %s", vm, domain))
+	out, err := c.Exec(fmt.Sprintf("domain add %s %s", vm, domain))
+	if err != nil {
+		return out, err // HTTP-level error (already *Error)
+	}
+	// exe.dev returns HTTP 200 even on application-level failures, putting
+	// the error inside the JSON body. Parse and surface it.
+	var resp struct {
+		Domain string `json:"domain"`
+		Error  string `json:"error"`
+	}
+	if jerr := json.Unmarshal([]byte(out), &resp); jerr == nil && resp.Error != "" {
+		return out, &AppError{Domain: resp.Domain, Reason: resp.Error}
+	}
+	return out, nil
 }

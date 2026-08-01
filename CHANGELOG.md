@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.4] - 2025-08-01
+
+### Fixed
+- Domain registration retry was not triggering on DNS propagation failures because the exe.dev API returns HTTP 200 with the error embedded in the JSON body. exebox now parses the response body and retries application-level errors (e.g. "DNS does not point to ...") every 5s for up to 1 minute.
+
 ## [v0.5.3] - 2025-08-01
 
 ### Added
