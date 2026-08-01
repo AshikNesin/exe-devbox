@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.3] - 2025-08-01
+
+### Added
+- `exebox dev` now shows the public proxy URL in its startup output, as a clickable terminal hyperlink.
+
 ## [v0.5.2] - 2025-08-01
 
 ### Fixed
