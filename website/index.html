@@ -698,8 +698,8 @@ footer {
         <h3><span class="badge-icon green">✓</span> With exebox</h3>
         <ul class="problem-list">
           <li><span class="num green">1</span> <code>exebox setup</code>: one command turns a fresh VM into a multi-project devbox.</li>
-          <li><span class="num green">2</span> <code>exebox new groot</code>: DNS, exe.dev registration, nginx route. Done in seconds.</li>
-          <li><span class="num green">3</span> <code>exebox dev groot</code>: launches the dev server with HMR that works through the proxy.</li>
+          <li><span class="num green">2</span> <code>exebox new myapp</code>: DNS, exe.dev registration, nginx route. Done in seconds.</li>
+          <li><span class="num green">3</span> <code>exebox dev myapp</code>: launches the dev server with HMR that works through the proxy.</li>
           <li><span class="num green">4</span> Add a new project anytime with a single command. No repeating the whole setup.</li>
           <li><span class="num green">5</span> <code>exebox doctor</code> validates the entire stack. Push notifications keep you informed.</li>
         </ul>
@@ -727,14 +727,14 @@ footer {
         <button class="step-btn" data-step="1">
           <div class="step-num-circle">2</div>
           <div class="step-body">
-            <div class="step-title-text">exebox new groot</div>
+            <div class="step-title-text">exebox new myapp</div>
             <div class="step-desc-text">Onboard a project domain: DNS + exe.dev + nginx</div>
           </div>
         </button>
         <button class="step-btn" data-step="2">
           <div class="step-num-circle">3</div>
           <div class="step-body">
-            <div class="step-title-text">exebox dev groot</div>
+            <div class="step-title-text">exebox dev myapp</div>
             <div class="step-desc-text">Launch dev server with HMR through the proxy</div>
           </div>
         </button>
@@ -924,8 +924,8 @@ footer {
 
     <div class="chips">
       <button class="chip quick" data-cmd="exebox setup --default-domain nesin.io">exebox setup</button>
-      <button class="chip quick" data-cmd="exebox new groot">exebox new groot</button>
-      <button class="chip quick" data-cmd="exebox dev groot">exebox dev groot</button>
+      <button class="chip quick" data-cmd="exebox new myapp">exebox new myapp</button>
+      <button class="chip quick" data-cmd="exebox dev myapp">exebox dev myapp</button>
       <button class="chip quick" data-cmd="exebox status">exebox status</button>
       <button class="chip quick" data-cmd="exebox doctor">exebox doctor</button>
       <button class="chip quick" data-cmd="exebox update --check">exebox update</button>
@@ -1011,44 +1011,44 @@ const SIMS = {
     [`✅ Setup complete.`, 't-ok'],
     [`   Run <span class="t-acc">exebox new &lt;project&gt;</span> to onboard a domain.`, 't-dim'],
   ],
-  'exebox new groot': [
-    [`${SP}<span class="t-acc">exebox new groot</span>`, 't-acc', 400],
-    [`  Derived domain: <span class="t-pur">groot.nesin.io</span>`, 't-out'],
+  'exebox new myapp': [
+    [`${SP}<span class="t-acc">exebox new myapp</span>`, 't-acc', 400],
+    [`  Derived domain: <span class="t-pur">myapp.nesin.io</span>`, 't-out'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Detecting DNS provider for nesin.io...</span>`, 't-dim'],
     [`  Provider: <span class="t-ok">Cloudflare</span>`, 't-out'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Adding CNAME record...</span>`, 't-dim'],
-    [`  groot.nesin.io → CNAME → nesins-devbox.exe.xyz`, 't-out'],
+    [`  myapp.nesin.io → CNAME → nesins-devbox.exe.xyz`, 't-out'],
     [`  ✓ Record created via exe.dev Cloudflare integration`, 't-ok'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Registering domain with exe.dev...</span>`, 't-dim'],
     [`  ✓ Domain registered (API token found)`, 't-ok'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Writing nginx server block...</span>`, 't-dim'],
-    [`  ✓ ~/.exebox/nginx/conf.d/groot.conf`, 't-ok'],
+    [`  ✓ ~/.exebox/nginx/conf.d/myapp.conf`, 't-ok'],
     [`  ✓ nginx reloaded`, 't-ok'],
     [``, 't-dim', 200],
-    [`✅ groot.nesin.io is live.`, 't-ok'],
-    [`   Run <span class="t-acc">exebox dev groot</span> to start serving.`, 't-dim'],
+    [`✅ myapp.nesin.io is live.`, 't-ok'],
+    [`   Run <span class="t-acc">exebox dev myapp</span> to start serving.`, 't-dim'],
   ],
-  'exebox dev groot': [
-    [`${SP}<span class="t-acc">exebox dev groot</span>`, 't-acc', 400],
+  'exebox dev myapp': [
+    [`${SP}<span class="t-acc">exebox dev myapp</span>`, 't-acc', 400],
     [`  <span class="t-dim">Setting HMR environment...</span>`, 't-dim'],
-    [`  VITE_HMR_URL = wss://groot.nesin.io/hmr`, 't-out'],
+    [`  VITE_HMR_URL = wss://myapp.nesin.io/hmr`, 't-out'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Starting dev server (detached)...</span>`, 't-dim'],
     [``, 't-dim', 500],
     [`  <span class="t-pur">VITE v6.0.0  ready in 412 ms</span>`, 't-pur'],
     [``, 't-dim', 150],
     [`  ➜  Local:   http://localhost:5173/`, 't-dim'],
-    [`  ➜  <span class="t-ok">HMR:     wss://groot.nesin.io/hmr ✓</span>`, 't-ok'],
+    [`  ➜  <span class="t-ok">HMR:     wss://myapp.nesin.io/hmr ✓</span>`, 't-ok'],
     [``, 't-dim', 200],
-    [`  portless: route 'groot.localhost' → :5173 registered`, 't-out'],
+    [`  portless: route 'myapp.localhost' → :5173 registered`, 't-out'],
     [``, 't-dim', 200],
     [`✅ Dev server running.`, 't-ok'],
-    [`   Logs: ~/.exebox/state/groot-dev.log`, 't-dim'],
-    [`🌐 Visit: https://groot.nesin.io`, 't-acc'],
+    [`   Logs: ~/.exebox/state/myapp-dev.log`, 't-dim'],
+    [`🌐 Visit: https://myapp.nesin.io`, 't-acc'],
   ],
   'exebox status': [
     [`${SP}<span class="t-acc">exebox status</span>`, 't-acc', 400],
@@ -1063,11 +1063,11 @@ const SIMS = {
     [`  ${SP}portless    ✓ listening on :8888`, 't-ok'],
     [``, 't-dim', 150],
     [` Domains`, 't-pur'],
-    [`  ${SP}groot.nesin.io    ✓ 200 OK`, 't-ok'],
+    [`  ${SP}myapp.nesin.io    ✓ 200 OK`, 't-ok'],
     [`  ${SP}api.nesin.io      ✓ 200 OK`, 't-ok'],
     [``, 't-dim', 150],
     [` Routes (portless)`, 't-pur'],
-    [`  ${SP}groot.localhost → :5173`, 't-out'],
+    [`  ${SP}myapp.localhost → :5173`, 't-out'],
     [`  ${SP}api.localhost   → :3000`, 't-out'],
     [``, 't-dim', 150],
     [`✅ All systems operational`, 't-ok'],
@@ -1124,7 +1124,7 @@ async function heroLoop() {
   if (heroRunning) return;       // prevent duplicate loops
   heroRunning = true;
   const el = document.getElementById('heroTermBody');
-  const seq = ['exebox setup --default-domain nesin.io', 'exebox new groot', 'exebox dev groot'];
+  const seq = ['exebox setup --default-domain nesin.io', 'exebox new myapp', 'exebox dev myapp'];
   while (heroVisible) {
     el.innerHTML = '';
     for (const cmd of seq) {
@@ -1151,8 +1151,8 @@ heroObserver.observe(heroTermEl);
 // ═══ Walkthrough ═══
 const WALK_CMDS = [
   'exebox setup --default-domain nesin.io',
-  'exebox new groot',
-  'exebox dev groot',
+  'exebox new myapp',
+  'exebox dev myapp',
   'exebox status',
 ];
 let walkRunning = false;
