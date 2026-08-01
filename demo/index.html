@@ -607,6 +607,9 @@ footer {
 .footer-links a { color: var(--text-secondary); font-size: 14px; transition: color .2s; }
 .footer-links a:hover { color: var(--brand); }
 .footer-copy { color: var(--text-tertiary); font-size: 13px; }
+.footer-built { color: var(--text-tertiary); font-size: 12.5px; margin-top: 8px; width: 100%; text-align: center; }
+.footer-built a { color: var(--text-secondary); text-decoration: none; border-bottom: 1px solid var(--border); transition: border-color .2s, color .2s; }
+.footer-built a:hover { color: var(--brand); border-color: var(--brand); }
 
 /* ═══ Reveal animations ═══ */
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(0.16,1,0.3,1), transform .7s cubic-bezier(0.16,1,0.3,1); }
@@ -986,6 +989,9 @@ footer {
       <a href="https://github.com/AshikNesin/exebox/blob/main/docs/PRD.md" target="_blank">PRD</a>
     </div>
     <div class="footer-copy">MIT Licensed · Built for exe.dev</div>
+  </div>
+  <div class="footer-built">
+    Built by <a href="https://ashiknesin.com" target="_blank">Ashik Nesin</a> with <a href="https://github.com/boldsoftware/shelley" target="_blank">Shelley Agent</a>
   </div>
 </footer>
 
