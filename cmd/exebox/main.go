@@ -15,8 +15,7 @@ var Version = "dev"
 func main() {
 	root := cmds.NewRoot(Version)
 	if err := root.Execute(); err != nil {
-		// cobra prints the error itself; just exit non-zero.
-		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 }

@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.5] - 2025-08-01
+
+### Fixed
+- All `exebox` commands failed silently (exit 1, no output) on error because `main.go` assumed cobra would print errors, but `SilenceErrors` was enabled. The actual error message is now printed to stderr.
+
 ## [v0.5.4] - 2025-08-01
 
 ### Fixed
