@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -215,9 +216,9 @@ func runDev(o devOpts) devResult {
 	return devResult{ok: true}
 }
 
-// inferProjectFromCWD returns the directory name of the nearest ancestor
-// containing a package.json — used as the portless project name. Returns ""
-// if no package.json is found (walks up to the home dir).
+// inferProjectFromCWD returns the project name from the nearest ancestor
+// containing a package.json — reads its "name" field, falling back to the
+// directory name. Returns "" if no package.json is found.
 func inferProjectFromCWD() string {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -228,8 +229,8 @@ func inferProjectFromCWD() string {
 		return ""
 	}
 	for dir := cwd; dir != "/" && dir != home && strings.HasPrefix(dir, home); {
-		if _, err := os.Stat(filepath.Join(dir, "package.json")); err == nil {
-			return filepath.Base(dir)
+		if name := readPackageName(dir); name != "" {
+			return name
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -238,6 +239,25 @@ func inferProjectFromCWD() string {
 		dir = parent
 	}
 	return ""
+}
+
+// readPackageName reads the "name" field from <dir>/package.json, falling
+// back to the directory base name if the field is missing/unparseable.
+func readPackageName(dir string) string {
+	if _, err := os.Stat(filepath.Join(dir, "package.json")); err != nil {
+		return ""
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "package.json"))
+	if err != nil {
+		return filepath.Base(dir)
+	}
+	var pkg struct {
+		Name string `json:"name"`
+	}
+	if json.Unmarshal(data, &pkg) == nil && pkg.Name != "" {
+		return pkg.Name
+	}
+	return filepath.Base(dir)
 }
 
 // lookupProjectDomain returns the first public domain + backend for a project
