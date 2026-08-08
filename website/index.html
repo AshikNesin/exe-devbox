@@ -223,7 +223,8 @@ header .wrap {
   display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   gap: 56px; align-items: center;
 }
-@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; gap: 40px; } }
+.hero-grid > * { min-width: 0; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
 
 .hero-badge {
   display: inline-flex; align-items: center; gap: 8px;
@@ -260,7 +261,7 @@ header .wrap {
 }
 .install .cmd {
   font-family: var(--mono); font-size: 12.5px; color: var(--ink);
-  overflow-x: auto; white-space: nowrap; flex: 1;
+  overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0;
   scrollbar-width: none;
 }
 .install .cmd::-webkit-scrollbar { display: none; }
@@ -353,7 +354,8 @@ header .wrap {
   display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   gap: 20px; align-items: stretch;
 }
-@media (max-width: 900px) { .explorer { grid-template-columns: 1fr; } }
+.explorer > * { min-width: 0; }
+@media (max-width: 900px) { .explorer { grid-template-columns: minmax(0, 1fr); } }
 .help-list { display: flex; flex-direction: column; }
 .help-list .term-body { flex: 1; padding: 10px 8px; }
 .cmd-row {
@@ -377,8 +379,9 @@ header .wrap {
 /* ═══ setup steps ═══ */
 .steps { display: flex; flex-direction: column; gap: 18px; max-width: 760px; }
 .setup-step {
-  display: grid; grid-template-columns: 44px 1fr; gap: 18px;
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 18px;
 }
+.setup-step > div { min-width: 0; }
 .setup-step .n {
   width: 40px; height: 40px; border-radius: 9px;
   border: 1px solid var(--line); background: var(--bg2);
@@ -394,7 +397,7 @@ header .wrap {
   padding: 11px 14px; margin-bottom: 8px;
 }
 .snippet code {
-  flex: 1; background: none; border: none; padding: 0;
+  flex: 1; min-width: 0; background: none; border: none; padding: 0;
   font-size: 12.5px; color: var(--ink); overflow-x: auto; white-space: nowrap;
   scrollbar-width: none;
 }
