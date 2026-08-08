@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.8] - 2026-08-08
+
+### Added
+- `devbox remove` command (aliases: `rm`, `delete`) — tears down a project domain: deletes the DNS CNAME, unregisters from exe.dev, removes the nginx server block, and cleans up state. The codebase under `~/Code` is never touched.
+- Remotion demo video under `videos/devbox-demo`.
+
+### Changed
+- Renamed the project: `exebox` → `exe-devbox` (repo), CLI stays `devbox`.
+- exe.dev API token now needs both `domain add` and `domain remove` scopes (for `devbox remove`).
+- Website redesigned: dark terminal-native aesthetic, interactive request-flow tracer, clickable `devbox --help` command explorer, and mobile fixes.
+
+### Removed
+- Legacy exebox migration code.
+
 ## [v0.5.7] - 2025-08-01
 
 ### Added
