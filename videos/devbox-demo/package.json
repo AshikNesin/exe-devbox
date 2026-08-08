@@ -1,0 +1,20 @@
+{
+  "name": "devbox-demo-video",
+  "private": true,
+  "scripts": {
+    "start": "remotion studio src/index.tsx",
+    "render": "remotion render src/index.tsx DevboxDemo out/devbox-demo.mp4",
+    "still": "remotion still src/index.tsx DevboxDemo out/devbox-demo.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "remotion": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "^5.8.3"
+  }
+}

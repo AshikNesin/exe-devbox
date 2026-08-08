@@ -3,3 +3,7 @@
 *.test
 /exebox-v*
 /release-build/
+
+# Remotion demo project dependencies and generated stills
+/videos/devbox-demo/node_modules/
+/videos/devbox-demo/out/devbox-demo.png
