@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const DirName = ".devbox"
@@ -147,6 +148,35 @@ func UpsertDomain(domains []Domain, d Domain) []Domain {
 		}
 	}
 	return append(domains, d)
+}
+
+// RemoveDomain deletes the entry whose primary domain field (which may be
+// a comma-separated multi-domain join) matches key. Returns the new list and
+// whether a match was found.
+func RemoveDomain(domains []Domain, key string) ([]Domain, bool) {
+	for i, ex := range domains {
+		if ex.Domain == key {
+			return append(domains[:i], domains[i+1:]...), true
+		}
+	}
+	return domains, false
+}
+
+// FindDomain looks up a domain entry by the primary domain field, the project
+// name, or any individual FQDN within a multi-domain entry. Returns nil if not
+// found.
+func FindDomain(domains []Domain, key string) *Domain {
+	for i := range domains {
+		if domains[i].Domain == key || domains[i].Project == key {
+			return &domains[i]
+		}
+		for _, fqdn := range strings.Split(domains[i].Domain, ",") {
+			if strings.TrimSpace(fqdn) == key {
+				return &domains[i]
+			}
+		}
+	}
+	return nil
 }
 
 // ProjectConf returns the nginx conf.d path for a project.

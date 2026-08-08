@@ -163,10 +163,68 @@ func (c *Client) UpsertCNAME(ctx context.Context, apex, host, target string) (id
 	return resp.Result.ID, true, nil
 }
 
+// DeleteCNAME removes the DNS record at the given host. Returns whether a
+// record was found and deleted. It matches any record type at that name.
+func (c *Client) DeleteCNAME(ctx context.Context, apex, host string) (deleted bool, err error) {
+	zid, err := c.zoneID(ctx, apex)
+	if err != nil {
+		return false, err
+	}
+
+	// Look for an existing record at this host (any type).
+	listU := fmt.Sprintf("%s/zones/%s/dns_records?name=%s", c.Base, zid, url.QueryEscape(host))
+	var existing struct {
+		Result []struct {
+			ID   string `json:"id"`
+			Type string `json:"type"`
+		} `json:"result"`
+	}
+	if err := c.do(ctx, listU, nil, &existing); err != nil {
+		return false, err
+	}
+	if len(existing.Result) == 0 {
+		return false, nil // nothing to delete
+	}
+
+	for _, rec := range existing.Result {
+		delU := fmt.Sprintf("%s/zones/%s/dns_records/%s", c.Base, zid, rec.ID)
+		var resp struct {
+			Success bool `json:"success"`
+			Errors  []struct{ Message string } `json:"errors"`
+		}
+		if err := c.doDelete(ctx, delU, &resp); err != nil {
+			return false, err
+		}
+		if !resp.Success {
+			return false, fmt.Errorf("cloudflare delete: %v", resp.Errors)
+		}
+	}
+	return true, nil
+}
+
 // do executes an authenticated request. method is POST for a body, GET otherwise.
 func (c *Client) do(ctx context.Context, u string, body any, dst any) error {
+	hc, err := c.request(ctx, u, body, http.MethodGet)
+	if err != nil {
+		return err
+	}
+	return c.run(hc, dst)
+}
+
+// doDelete executes an authenticated DELETE request.
+func (c *Client) doDelete(ctx context.Context, u string, dst any) error {
+	hc, err := c.request(ctx, u, nil, http.MethodDelete)
+	if err != nil {
+		return err
+	}
+	return c.run(hc, dst)
+}
+
+// request builds an authenticated request. method defaults to GET; POST for a
+// body ending in /dns_records; PUT for other bodies.
+func (c *Client) request(ctx context.Context, u string, body any, defaultMethod string) (*http.Request, error) {
 	var rdr io.Reader
-	var method = http.MethodGet
+	method := defaultMethod
 	if body != nil {
 		method = http.MethodPut
 		if strings.HasSuffix(u, "/dns_records") {
@@ -174,13 +232,13 @@ func (c *Client) do(ctx context.Context, u string, body any, dst any) error {
 		}
 		b, err := json.Marshal(body)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		rdr = bytes.NewReader(b)
 	}
 	req, err := http.NewRequestWithContext(ctx, method, u, rdr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// The exe.dev proxy injects auth for proxy-mode; only set the header in
 	// direct-token mode (setting it in proxy mode would be harmless but wrong).
@@ -188,6 +246,11 @@ func (c *Client) do(ctx context.Context, u string, body any, dst any) error {
 		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	return req, nil
+}
+
+// run executes the request and unmarshals the response.
+func (c *Client) run(req *http.Request, dst any) error {
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
 		return err
@@ -195,7 +258,7 @@ func (c *Client) do(ctx context.Context, u string, body any, dst any) error {
 	defer resp.Body.Close()
 	data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("%s %s: %s: %s", method, redactURL(u), resp.Status, strings.TrimSpace(string(data)))
+		return fmt.Errorf("%s %s: %s: %s", req.Method, redactURL(req.URL.String()), resp.Status, strings.TrimSpace(string(data)))
 	}
 	return json.Unmarshal(data, dst)
 }

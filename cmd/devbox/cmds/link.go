@@ -40,3 +40,9 @@ func suggestSetPublic(vm string) string {
 func domainAdd(vm, domain string) (shell string) {
 	return shellCommand(fmt.Sprintf("domain add %s %s", vm, domain))
 }
+
+// domainRemove unregisters a custom domain from exe.dev. Same note as
+// domainAdd: not suggestable, so returns the shell command.
+func domainRemove(vm, domain string) string {
+	return shellCommand(fmt.Sprintf("domain remove %s %s", vm, domain))
+}

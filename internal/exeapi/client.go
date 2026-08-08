@@ -135,3 +135,9 @@ func (c *Client) DomainAdd(vm, domain string) (string, error) {
 	}
 	return out, nil
 }
+
+// DomainRemove unregisters a custom domain from exe.dev via the HTTPS API.
+// Returns the API response text.
+func (c *Client) DomainRemove(vm, domain string) (string, error) {
+	return c.Exec(fmt.Sprintf("domain remove %s %s", vm, domain))
+}
