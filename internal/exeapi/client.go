@@ -6,7 +6,7 @@
 //   - config.json "api_token" field (set via devbox config set-token)
 //   - $EXE_API_TOKEN env var
 //
-// Create one scoped to just the commands you need (e.g. domain add) — see
+// Create one scoped to just the commands you need (e.g. domain add, domain remove) — see
 // https://exe.dev/docs/https-api.md
 package exeapi
 

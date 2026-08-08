@@ -266,7 +266,7 @@ func runNew(ctx context.Context, opts newOpts) newResult {
 	}
 
 	// STEP D: exe.dev domain registration.
-	// If $EXE_API_TOKEN is set (and scoped to domain add), we register
+	// If $EXE_API_TOKEN is set (and scoped to domain add/remove), we register
 	// automatically via the HTTPS API. Otherwise we fall back to manual:
 	// printing the shell command to paste at https://exe.dev/shell.
 	out.Heading("exe.dev registration")

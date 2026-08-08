@@ -125,9 +125,9 @@ Browser ──HTTPS──▶ exe.dev proxy ──▶ nginx (:8080)
 
 - **Automatic** — store a scoped exe.dev API token and devbox calls `domain add` directly. Setup is two steps:
 
-  **On your local machine** (where `ssh exe.dev` works), generate a token scoped to **only** `domain add`:
+  **On your local machine** (where `ssh exe.dev` works), generate a token scoped to **only** `domain add` and `domain remove`:
   ```bash
-  ssh exe.dev ssh-key generate-api-key --cmds="domain add" --exp=never --label=devbox
+  ssh exe.dev ssh-key generate-api-key --cmds="domain add,domain remove" --exp=never --label=devbox
   ```
 
   **On the VM**, store it:

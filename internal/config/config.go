@@ -67,7 +67,7 @@ type File struct {
 	NginxPort     int    `json:"nginx_port,omitempty"`
 	PortlessPort  int    `json:"portless_port,omitempty"`
 	CNAMETarget   string `json:"cname_target,omitempty"`
-	APIToken      string `json:"api_token,omitempty"` // exe.dev HTTPS API token (scoped to domain add)
+	APIToken      string `json:"api_token,omitempty"` // exe.dev HTTPS API token (scoped to domain add + remove)
 	DefaultDomain string `json:"default_domain,omitempty"` // e.g. nesin.io — used to derive FQDNs in devbox new
 }
 
