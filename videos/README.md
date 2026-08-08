@@ -1,6 +1,6 @@
 # devbox Remotion demo
 
-The rendered demo is at `devbox-demo/out/devbox-demo.mp4`.
+The published demo lives at [`../media/devbox-demo.mp4`](../media/devbox-demo.mp4) and is embedded in the main README. The Remotion render output goes to `devbox-demo/out/devbox-demo.mp4`.
 
 ## Render locally
 
@@ -8,6 +8,9 @@ The rendered demo is at `devbox-demo/out/devbox-demo.mp4`.
 cd videos/devbox-demo
 npm install
 npm run render
+
+# publish the render
+cp out/devbox-demo.mp4 ../../media/devbox-demo.mp4
 ```
 
 Preview the composition in Remotion Studio:

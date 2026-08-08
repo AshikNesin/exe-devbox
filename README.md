@@ -2,6 +2,12 @@
 
 A CLI that automates bringing up an [exe.dev](https://exe.dev) VM for multi-project development behind an **nginx + portless** reverse proxy. It wires per-project public subdomains to your VM, handles DNS, and fixes Vite HMR through the proxy — so a fresh VM goes from zero to serving real traffic in minutes.
 
+## Demo
+
+https://raw.githubusercontent.com/AshikNesin/exe-devbox/main/media/devbox-demo.mp4
+
+*(15-second tour of `devbox setup`, `new`, `dev`, and `remove` — rendered with [Remotion](videos/).)*
+
 ## What it does
 
 **1. One-time VM bring-up** — `devbox setup`
