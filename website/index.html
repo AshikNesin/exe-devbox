@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>exebox: Instant devbox for multiple projects on exe.dev</title>
-<meta name="description" content="exebox automates multi-project development behind an nginx + portless reverse proxy on your exe.dev VM.">
+<title>devbox: Instant devbox for multiple projects on exe.dev</title>
+<meta name="description" content="devbox automates multi-project development behind an nginx + portless reverse proxy on your exe.dev VM.">
 <style>
 /* ═══════════════════════════════════════════════════
    Design Tokens
@@ -618,7 +618,7 @@ footer {
   <nav id="nav">
     <a href="#top" class="brand">
       <div class="brand-logo">📦</div>
-      exebox
+      devbox
     </a>
     <div class="nav-links">
       <a href="#problem">Problem</a>
@@ -626,7 +626,7 @@ footer {
       <a href="#architecture">Architecture</a>
       <a href="#getting-started">Getting Started</a>
     </div>
-    <a href="https://github.com/AshikNesin/exebox" target="_blank" class="nav-cta">
+    <a href="https://github.com/AshikNesin/exe-devbox" target="_blank" class="nav-cta">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       Star on GitHub
     </a>
@@ -640,7 +640,7 @@ footer {
   <a href="#walkthrough">Walkthrough</a>
   <a href="#architecture">Architecture</a>
   <a href="#getting-started">Getting Started</a>
-  <a href="https://github.com/AshikNesin/exebox" target="_blank">GitHub →</a>
+  <a href="https://github.com/AshikNesin/exe-devbox" target="_blank">GitHub →</a>
 </div>
 
 <!-- ═══ HERO ═══ -->
@@ -669,7 +669,7 @@ footer {
     <div class="hero-term term">
       <div class="term-bar">
         <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
-        <span class="term-title">exedev@nesins-devbox: exebox</span>
+        <span class="term-title">exedev@nesins-devbox: devbox</span>
       </div>
       <div class="term-body" id="heroTermBody"></div>
     </div>
@@ -681,7 +681,7 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ The Problem</div>
     <h2 class="section-title">You just want a devbox.<br>Not a infrastructure project.</h2>
-    <p class="section-desc">An exe.dev VM gives you an instant cloud devbox. But the moment you want to work on <strong>multiple projects</strong>, each with its own public domain, DNS, proxy config, and working HMR, you sink hours into yak-shaving instead of writing code. exebox turns that multi-hour setup into a few seconds.</p>
+    <p class="section-desc">An exe.dev VM gives you an instant cloud devbox. But the moment you want to work on <strong>multiple projects</strong>, each with its own public domain, DNS, proxy config, and working HMR, you sink hours into yak-shaving instead of writing code. devbox turns that multi-hour setup into a few seconds.</p>
 
     <div class="problem-grid">
       <div class="problem-card">
@@ -695,13 +695,13 @@ footer {
         </ul>
       </div>
       <div class="problem-card">
-        <h3><span class="badge-icon green">✓</span> With exebox</h3>
+        <h3><span class="badge-icon green">✓</span> With devbox</h3>
         <ul class="problem-list">
-          <li><span class="num green">1</span> <code>exebox setup</code>: one command turns a fresh VM into a multi-project devbox.</li>
-          <li><span class="num green">2</span> <code>exebox new myapp</code>: DNS, exe.dev registration, nginx route. Done in seconds.</li>
-          <li><span class="num green">3</span> <code>exebox dev myapp</code>: launches the dev server with HMR that works through the proxy.</li>
+          <li><span class="num green">1</span> <code>devbox setup</code>: one command turns a fresh VM into a multi-project devbox.</li>
+          <li><span class="num green">2</span> <code>devbox new myapp</code>: DNS, exe.dev registration, nginx route. Done in seconds.</li>
+          <li><span class="num green">3</span> <code>devbox dev myapp</code>: launches the dev server with HMR that works through the proxy.</li>
           <li><span class="num green">4</span> Add a new project anytime with a single command. No repeating the whole setup.</li>
-          <li><span class="num green">5</span> <code>exebox doctor</code> validates the entire stack. Push notifications keep you informed.</li>
+          <li><span class="num green">5</span> <code>devbox doctor</code> validates the entire stack. Push notifications keep you informed.</li>
         </ul>
       </div>
     </div>
@@ -713,35 +713,35 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ Guided Tour</div>
     <h2 class="section-title">Four commands<br>to production.</h2>
-    <p class="section-desc">Click through each step to watch exebox bring a fresh exe.dev VM online, from installing dependencies to launching a live dev server.</p>
+    <p class="section-desc">Click through each step to watch devbox bring a fresh exe.dev VM online, from installing dependencies to launching a live dev server.</p>
 
     <div class="walk-grid">
       <div class="steps">
         <button class="step-btn active" data-step="0">
           <div class="step-num-circle">1</div>
           <div class="step-body">
-            <div class="step-title-text">exebox setup</div>
+            <div class="step-title-text">devbox setup</div>
             <div class="step-desc-text">Install deps, configure nginx, discover VM identity</div>
           </div>
         </button>
         <button class="step-btn" data-step="1">
           <div class="step-num-circle">2</div>
           <div class="step-body">
-            <div class="step-title-text">exebox new myapp</div>
+            <div class="step-title-text">devbox new myapp</div>
             <div class="step-desc-text">Onboard a project domain: DNS + exe.dev + nginx</div>
           </div>
         </button>
         <button class="step-btn" data-step="2">
           <div class="step-num-circle">3</div>
           <div class="step-body">
-            <div class="step-title-text">exebox dev myapp</div>
+            <div class="step-title-text">devbox dev myapp</div>
             <div class="step-desc-text">Launch dev server with HMR through the proxy</div>
           </div>
         </button>
         <button class="step-btn" data-step="3">
           <div class="step-num-circle">4</div>
           <div class="step-body">
-            <div class="step-title-text">exebox status</div>
+            <div class="step-title-text">devbox status</div>
             <div class="step-desc-text">Verify everything is live and healthy</div>
           </div>
         </button>
@@ -750,7 +750,7 @@ footer {
       <div class="term">
         <div class="term-bar">
           <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
-          <span class="term-title">walkthrough: exebox</span>
+          <span class="term-title">walkthrough: devbox</span>
           <button id="replayBtn" class="replay-btn">↻ replay</button>
         </div>
         <div class="term-body" id="walkTermBody"></div>
@@ -764,7 +764,7 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ Under the Hood</div>
     <h2 class="section-title">How traffic flows.</h2>
-    <p class="section-desc">exebox wires a four-layer pipeline. exe.dev terminates TLS; nginx routes by Host header; portless maps <code>.localhost</code> routes to dev servers. Every layer is configured automatically.</p>
+    <p class="section-desc">devbox wires a four-layer pipeline. exe.dev terminates TLS; nginx routes by Host header; portless maps <code>.localhost</code> routes to dev servers. Every layer is configured automatically.</p>
 
     <div class="arch-wrap">
       <div class="arch-flow" id="archFlow">
@@ -823,7 +823,7 @@ footer {
       <div class="feature-card">
         <div class="emoji">🏠</div>
         <h3>Smart defaults</h3>
-        <p>Set <code>--default-domain</code> once, then just pass a project name. exebox derives the FQDN and wires the whole chain automatically.</p>
+        <p>Set <code>--default-domain</code> once, then just pass a project name. devbox derives the FQDN and wires the whole chain automatically.</p>
       </div>
       <div class="feature-card">
         <div class="emoji">📡</div>
@@ -833,7 +833,7 @@ footer {
       <div class="feature-card">
         <div class="emoji">🩺</div>
         <h3>Health checks</h3>
-        <p><code>exebox doctor</code> validates reflection, dependencies, services, and ports, so you know the stack is healthy at a glance.</p>
+        <p><code>devbox doctor</code> validates reflection, dependencies, services, and ports, so you know the stack is healthy at a glance.</p>
       </div>
       <div class="feature-card">
         <div class="emoji">🔄</div>
@@ -849,17 +849,17 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ Quick Start</div>
     <h2 class="section-title">Get running in<br>60 seconds.</h2>
-    <p class="section-desc">Install exebox, run setup once, then onboard and launch projects with single commands. No Go toolchain required. Just curl the binary.</p>
+    <p class="section-desc">Install devbox, run setup once, then onboard and launch projects with single commands. No Go toolchain required. Just curl the binary.</p>
 
     <div class="gs-list">
       <div class="gs-step">
         <div class="gs-num">1</div>
         <div class="gs-content">
-          <h4>Install exebox</h4>
+          <h4>Install devbox</h4>
           <p>Grab the latest release binary. No Go needed:</p>
           <div class="code-block">
 <span class="code-line"><span class="c-cmt"># From release binary (recommended)</span></span>
-<span class="code-line"><span class="c-cmd">curl</span> <span class="c-arg">-sfL</span> https://raw.githubusercontent.com/AshikNesin/exebox/main/install.sh <span class="c-flag">|</span> <span class="c-cmd">bash</span></span>
+<span class="code-line"><span class="c-cmd">curl</span> <span class="c-arg">-sfL</span> https://raw.githubusercontent.com/AshikNesin/exe-devbox/main/install.sh <span class="c-flag">|</span> <span class="c-cmd">bash</span></span>
           </div>
         </div>
       </div>
@@ -870,7 +870,7 @@ footer {
           <h4>Set up the VM <span style="font-weight:400;color:var(--text-tertiary);font-size:14px">(one-time, idempotent)</span></h4>
           <p>Installs Node.js, portless, and nginx; discovers the VM's identity; sets your default domain so you can just pass project names later.</p>
           <div class="code-block">
-<span class="code-line"><span class="c-cmd">exebox</span> setup <span class="c-flag">--default-domain</span> <span class="c-str">example.com</span></span>
+<span class="code-line"><span class="c-cmd">devbox</span> setup <span class="c-flag">--default-domain</span> <span class="c-str">example.com</span></span>
           </div>
         </div>
       </div>
@@ -879,12 +879,17 @@ footer {
         <div class="gs-num">3</div>
         <div class="gs-content">
           <h4>Onboard a project</h4>
-          <p>Wires DNS (CNAME → your-vm.exe.xyz), registers with exe.dev, writes the nginx server block, and reloads. All in one command.</p>
+          <p>Wires DNS (CNAME → your-vm.exe.xyz), registers with exe.dev, writes the nginx server block, and reloads. For automatic exe.dev registration and removal, create a scoped token:</p>
+          <div class="code-block">
+<span class="code-line"><span class="c-cmd">ssh</span> exe.dev ssh-key generate-api-key <span class="c-flag">--cmds=</span><span class="c-str">"domain add,domain remove"</span> <span class="c-flag">--exp=</span><span class="c-str">never</span> <span class="c-flag">--label=</span><span class="c-str">devbox</span></span>
+<span class="code-line"><span class="c-cmt"># Store the token on the VM</span></span>
+<span class="code-line"><span class="c-cmd">devbox</span> set-token <span class="c-str">&lt;token&gt;</span></span>
+          </div>
           <div class="code-block">
 <span class="code-line"><span class="c-cmt"># Derives myapp.example.com from your default domain</span></span>
-<span class="code-line"><span class="c-cmd">exebox</span> new <span class="c-str">myapp</span></span>
+<span class="code-line"><span class="c-cmd">devbox</span> new <span class="c-str">myapp</span></span>
 <span class="code-line"><span class="c-cmt"># Or specify the full domain explicitly</span></span>
-<span class="code-line"><span class="c-cmd">exebox</span> new <span class="c-flag">-d</span> <span class="c-str">myapp.example.com</span></span>
+<span class="code-line"><span class="c-cmd">devbox</span> new <span class="c-flag">-d</span> <span class="c-str">myapp.example.com</span></span>
           </div>
         </div>
       </div>
@@ -895,7 +900,7 @@ footer {
           <h4>Launch the dev server</h4>
           <p>Sets <code>VITE_HMR_URL</code> so HMR works through the proxy, registers the portless route, and runs detached with logs.</p>
           <div class="code-block">
-<span class="code-line"><span class="c-cmd">exebox</span> dev <span class="c-str">myapp</span></span>
+<span class="code-line"><span class="c-cmd">devbox</span> dev <span class="c-str">myapp</span></span>
           </div>
         </div>
       </div>
@@ -903,11 +908,24 @@ footer {
       <div class="gs-step">
         <div class="gs-num">5</div>
         <div class="gs-content">
+          <h4>Remove a project</h4>
+          <p>Tears down the DNS record, unregisters from exe.dev, removes the nginx route, and cleans up state. The codebase under <code>~/Code</code> is never touched.</p>
+          <div class="code-block">
+<span class="code-line"><span class="c-cmd">devbox</span> remove <span class="c-str">myapp</span>     <span class="c-cmt"># by project name</span></span>
+<span class="code-line"><span class="c-cmd">devbox</span> rm <span class="c-str">myapp.example.com</span> <span class="c-cmt"># by domain</span></span>
+<span class="code-line"><span class="c-cmd">devbox</span> remove <span class="c-flag">-y</span> <span class="c-str">myapp</span>  <span class="c-cmt"># skip confirmation</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-step">
+        <div class="gs-num">6</div>
+        <div class="gs-content">
           <h4>Verify everything is live</h4>
           <p>Check VM identity, proxy state, domain liveness, and portless routes.</p>
           <div class="code-block">
-<span class="code-line"><span class="c-cmd">exebox</span> status</span>
-<span class="code-line"><span class="c-cmd">exebox</span> doctor   <span class="c-cmt"># full health check</span></span>
+<span class="code-line"><span class="c-cmd">devbox</span> status</span>
+<span class="code-line"><span class="c-cmd">devbox</span> doctor   <span class="c-cmt"># full health check</span></span>
           </div>
         </div>
       </div>
@@ -920,15 +938,16 @@ footer {
   <div class="wrap">
     <div class="section-label">⟶ Try it</div>
     <h2 class="section-title">Interactive terminal.</h2>
-    <p class="section-desc">Run any exebox command. Click a chip below: the simulated CLI responds just like the real thing.</p>
+    <p class="section-desc">Run any devbox command. Click a chip below: the simulated CLI responds just like the real thing.</p>
 
     <div class="chips">
-      <button class="chip quick" data-cmd="exebox setup --default-domain nesin.io">exebox setup</button>
-      <button class="chip quick" data-cmd="exebox new myapp">exebox new myapp</button>
-      <button class="chip quick" data-cmd="exebox dev myapp">exebox dev myapp</button>
-      <button class="chip quick" data-cmd="exebox status">exebox status</button>
-      <button class="chip quick" data-cmd="exebox doctor">exebox doctor</button>
-      <button class="chip quick" data-cmd="exebox update --check">exebox update</button>
+      <button class="chip quick" data-cmd="devbox setup --default-domain nesin.io">devbox setup</button>
+      <button class="chip quick" data-cmd="devbox new myapp">devbox new myapp</button>
+      <button class="chip quick" data-cmd="devbox dev myapp">devbox dev myapp</button>
+      <button class="chip quick" data-cmd="devbox remove myapp">devbox remove myapp</button>
+      <button class="chip quick" data-cmd="devbox status">devbox status</button>
+      <button class="chip quick" data-cmd="devbox doctor">devbox doctor</button>
+      <button class="chip quick" data-cmd="devbox update --check">devbox update</button>
     </div>
 
     <div class="term">
@@ -946,12 +965,12 @@ footer {
   <div class="footer-inner">
     <div class="footer-brand">
       <div class="brand-logo" style="width:26px;height:26px;font-size:14px;">📦</div>
-      exebox
+      devbox
     </div>
     <div class="footer-links">
-      <a href="https://github.com/AshikNesin/exebox" target="_blank">GitHub</a>
-      <a href="https://github.com/AshikNesin/exebox/blob/main/CHANGELOG.md" target="_blank">Changelog</a>
-      <a href="https://github.com/AshikNesin/exebox/blob/main/docs/PRD.md" target="_blank">PRD</a>
+      <a href="https://github.com/AshikNesin/exe-devbox" target="_blank">GitHub</a>
+      <a href="https://github.com/AshikNesin/exe-devbox/blob/main/CHANGELOG.md" target="_blank">Changelog</a>
+      <a href="https://github.com/AshikNesin/exe-devbox/blob/main/docs/PRD.md" target="_blank">PRD</a>
     </div>
   </div>
   <div class="footer-built">
@@ -986,8 +1005,8 @@ async function promptLine(el, cmd) {
 
 // ═══ Simulations ═══
 const SIMS = {
-  'exebox setup --default-domain nesin.io': [
-    [`${SP}<span class="t-acc">exebox setup</span>`, 't-acc', 400],
+  'devbox setup --default-domain nesin.io': [
+    [`${SP}<span class="t-acc">devbox setup</span>`, 't-acc', 400],
     [`${SP}<span class="t-dim">Checking dependencies...</span>`, 't-dim'],
     [`  ✓ Node.js v24.18.0`, 't-ok'],
     [`  ✓ portless found`, 't-ok'],
@@ -999,8 +1018,8 @@ const SIMS = {
     [`  CNAME target: nesins-devbox.exe.xyz`, 't-dim'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Writing nginx config...</span>`, 't-dim'],
-    [`  ✓ ~/.exebox/nginx/conf.d/00-exebox-base.conf`, 't-ok'],
-    [`  ✓ Include shim → /etc/nginx/conf.d/exebox.conf`, 't-ok'],
+    [`  ✓ ~/.devbox/nginx/conf.d/00-devbox-base.conf`, 't-ok'],
+    [`  ✓ Include shim → /etc/nginx/conf.d/devbox.conf`, 't-ok'],
     [`  ✓ nginx reloaded`, 't-ok'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Starting portless daemon on :8888...</span>`, 't-dim'],
@@ -1009,10 +1028,10 @@ const SIMS = {
     [`${SP}Saving default domain: <span class="t-acc">nesin.io</span>`, 't-out'],
     [``, 't-dim', 200],
     [`✅ Setup complete.`, 't-ok'],
-    [`   Run <span class="t-acc">exebox new &lt;project&gt;</span> to onboard a domain.`, 't-dim'],
+    [`   Run <span class="t-acc">devbox new &lt;project&gt;</span> to onboard a domain.`, 't-dim'],
   ],
-  'exebox new myapp': [
-    [`${SP}<span class="t-acc">exebox new myapp</span>`, 't-acc', 400],
+  'devbox new myapp': [
+    [`${SP}<span class="t-acc">devbox new myapp</span>`, 't-acc', 400],
     [`  Derived domain: <span class="t-pur">myapp.nesin.io</span>`, 't-out'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Detecting DNS provider for nesin.io...</span>`, 't-dim'],
@@ -1026,14 +1045,14 @@ const SIMS = {
     [`  ✓ Domain registered (API token found)`, 't-ok'],
     [``, 't-dim', 200],
     [`${SP}<span class="t-dim">Writing nginx server block...</span>`, 't-dim'],
-    [`  ✓ ~/.exebox/nginx/conf.d/myapp.conf`, 't-ok'],
+    [`  ✓ ~/.devbox/nginx/conf.d/myapp.conf`, 't-ok'],
     [`  ✓ nginx reloaded`, 't-ok'],
     [``, 't-dim', 200],
     [`✅ myapp.nesin.io is live.`, 't-ok'],
-    [`   Run <span class="t-acc">exebox dev myapp</span> to start serving.`, 't-dim'],
+    [`   Run <span class="t-acc">devbox dev myapp</span> to start serving.`, 't-dim'],
   ],
-  'exebox dev myapp': [
-    [`${SP}<span class="t-acc">exebox dev myapp</span>`, 't-acc', 400],
+  'devbox dev myapp': [
+    [`${SP}<span class="t-acc">devbox dev myapp</span>`, 't-acc', 400],
     [`  <span class="t-dim">Setting HMR environment...</span>`, 't-dim'],
     [`  VITE_HMR_URL = wss://myapp.nesin.io/hmr`, 't-out'],
     [``, 't-dim', 200],
@@ -1047,11 +1066,35 @@ const SIMS = {
     [`  portless: route 'myapp.localhost' → :5173 registered`, 't-out'],
     [``, 't-dim', 200],
     [`✅ Dev server running.`, 't-ok'],
-    [`   Logs: ~/.exebox/state/myapp-dev.log`, 't-dim'],
+    [`   Logs: ~/.devbox/state/myapp-dev.log`, 't-dim'],
     [`🌐 Visit: https://myapp.nesin.io`, 't-acc'],
   ],
-  'exebox status': [
-    [`${SP}<span class="t-acc">exebox status</span>`, 't-acc', 400],
+  'devbox remove myapp': [
+    [`${SP}<span class="t-acc">devbox remove myapp</span>`, 't-acc', 400],
+    [``, 't-dim', 150],
+    [` ${SP}domains: myapp.nesin.io`, 't-out'],
+    [` ${SP}⚠ DNS records, exe.dev registration, and nginx routes will be removed.`, 't-warn'],
+    [` ${SP}the project codebase under ~/Code will NOT be touched.`, 't-dim'],,
+    [``, 't-dim', 200],
+    [` Remove "myapp"? [y/N]: <span class="t-acc">y</span>`, 't-dim'],
+    [``, 't-dim', 300],
+    [` DNS`, 't-pur'],
+    [`  ${SP}<span class="t-dim">Deleting CNAME record...</span>`, 't-dim'],
+    [`  ${SP}✓ deleted CNAME myapp.nesin.io (via proxy)`, 't-ok'],
+    [``, 't-dim', 200],
+    [` exe.dev`, 't-pur'],
+    [`  ${SP}<span class="t-dim">Unregistering from exe.dev...</span>`, 't-dim'],
+    [`  ${SP}✓ unregistered myapp.nesin.io from exe.dev`, 't-ok'],
+    [``, 't-dim', 200],
+    [` nginx`, 't-pur'],
+    [`  ${SP}✓ removed ~/.devbox/nginx/conf.d/myapp.conf`, 't-ok'],
+    [`  ${SP}✓ nginx reloaded`, 't-ok'],
+    [``, 't-dim', 200],
+    [`✅ myapp removed.`, 't-ok'],
+    [`   Codebase at ~/Code/myapp is untouched.`, 't-dim'],
+  ],
+  'devbox status': [
+    [`${SP}<span class="t-acc">devbox status</span>`, 't-acc', 400],
     [``, 't-dim', 150],
     [` VM Identity`, 't-pur'],
     [`  ${SP}name:    nesins-devbox`, 't-out'],
@@ -1072,8 +1115,8 @@ const SIMS = {
     [``, 't-dim', 150],
     [`✅ All systems operational`, 't-ok'],
   ],
-  'exebox doctor': [
-    [`${SP}<span class="t-acc">exebox doctor</span>`, 't-acc', 400],
+  'devbox doctor': [
+    [`${SP}<span class="t-acc">devbox doctor</span>`, 't-acc', 400],
     [``, 't-dim', 150],
     [` Reflection`, 't-pur'],
     [`  ${SP}✓ reflection.int.exe.xyz reachable`, 't-ok'],
@@ -1094,8 +1137,8 @@ const SIMS = {
     [``, 't-dim', 150],
     [`✅ All health checks passed (8/8)`, 't-ok'],
   ],
-  'exebox update --check': [
-    [`${SP}<span class="t-acc">exebox update --check</span>`, 't-acc', 400],
+  'devbox update --check': [
+    [`${SP}<span class="t-acc">devbox update --check</span>`, 't-acc', 400],
     [``, 't-dim', 150],
     [`${SP}<span class="t-dim">Checking latest release...</span>`, 't-dim'],
     [`  Current: v0.5.0`, 't-out'],
@@ -1109,7 +1152,7 @@ async function runSim(el, cmd) {
   await promptLine(el, cmd);
   const lines = SIMS[cmd];
   if (!lines) {
-    await appendLine(el, `<span class="t-warn">Command not found in this demo. Try: setup, new, dev, status, doctor, update</span>`);
+    await appendLine(el, `<span class="t-warn">Command not found in this demo. Try: setup, new, dev, remove, status, doctor, update</span>`);
     return;
   }
   for (const [html, cls, delay] of lines) {
@@ -1124,7 +1167,7 @@ async function heroLoop() {
   if (heroRunning) return;       // prevent duplicate loops
   heroRunning = true;
   const el = document.getElementById('heroTermBody');
-  const seq = ['exebox setup --default-domain nesin.io', 'exebox new myapp', 'exebox dev myapp'];
+  const seq = ['devbox setup --default-domain nesin.io', 'devbox new myapp', 'devbox dev myapp'];
   while (heroVisible) {
     el.innerHTML = '';
     for (const cmd of seq) {
@@ -1150,10 +1193,10 @@ heroObserver.observe(heroTermEl);
 
 // ═══ Walkthrough ═══
 const WALK_CMDS = [
-  'exebox setup --default-domain nesin.io',
-  'exebox new myapp',
-  'exebox dev myapp',
-  'exebox status',
+  'devbox setup --default-domain nesin.io',
+  'devbox new myapp',
+  'devbox dev myapp',
+  'devbox status',
 ];
 let walkRunning = false;
 async function runWalkthrough(step) {
@@ -1181,7 +1224,7 @@ document.getElementById('replayBtn').addEventListener('click', () => {
 const intBody = document.getElementById('intTermBody');
 let intBusy = false;
 function seedInt() {
-  intBody.innerHTML = `<div><span class="t-dim"># exebox interactive demo. Click a chip above.</span></div>`;
+  intBody.innerHTML = `<div><span class="t-dim"># devbox interactive demo. Click a chip above.</span></div>`;
   intBody.innerHTML += `<div class="cursor-line"><span class="t-prompt">exedev@nesins-devbox</span><span class="t-dim">:</span><span class="t-acc">~</span><span class="t-dim">$</span> <span class="cursor"></span></div>`;
 }
 async function runInteractive(cmd) {
