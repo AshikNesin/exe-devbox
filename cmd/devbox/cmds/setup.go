@@ -122,10 +122,7 @@ func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupRes
 	report.NginxPort = opts.nginxPort
 	out.Info("nginx will listen on :%d", opts.nginxPort)
 
-	// ensure config dir (New() may have auto-migrated from ~/.exe-devbox)
-	if config.WasMigrated() {
-		out.OK("migrated config from ~/.exe-devbox -> ~/.devbox")
-	}
+	// ensure config dir
 	if err := p.EnsureDirs(); err != nil {
 		return setupResult{report: report, ok: false, errMsg: err.Error()}
 	}

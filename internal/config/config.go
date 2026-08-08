@@ -13,10 +13,6 @@ import (
 
 const DirName = ".devbox"
 
-// legacyDirNames are pre-rename config dirs. We auto-migrate from any of them
-// if the new dir doesn't exist yet (one-time, on first run after upgrading).
-var legacyDirNames = []string{".exebox", ".exe-devbox"}
-
 // Paths holds resolved filesystem locations for one config root.
 type Paths struct {
 	Root    string // ~/.devbox
@@ -28,8 +24,6 @@ type Paths struct {
 }
 
 // New resolves paths for the given root. If root is empty, uses ~/.devbox.
-// On first use it auto-migrates a legacy ~/.exebox or ~/.exe-devbox dir if
-// present.
 func New(root string) (Paths, error) {
 	if root == "" {
 		home, err := os.UserHomeDir()
@@ -37,18 +31,6 @@ func New(root string) (Paths, error) {
 			return Paths{}, err
 		}
 		root = filepath.Join(home, DirName)
-		// One-time migration from a pre-rename dir.
-		if _, err := os.Stat(root); errors.Is(err, os.ErrNotExist) {
-			for _, legacy := range legacyDirNames {
-				legacyPath := filepath.Join(home, legacy)
-				if _, err := os.Stat(legacyPath); err == nil {
-					if err := migrateLegacy(legacyPath, root); err == nil {
-						migrated = true
-						break
-					}
-				}
-			}
-		}
 	}
 	root, err := filepath.Abs(root)
 	if err != nil {
@@ -63,43 +45,6 @@ func New(root string) (Paths, error) {
 		Domains: filepath.Join(root, "state", "domains.json"),
 	}
 	return p, nil
-}
-
-// migrated records whether a legacy dir migration happened during New().
-var migrated bool
-
-// WasMigrated reports whether the last New() call migrated from a legacy dir.
-func WasMigrated() bool { return migrated }
-
-// migrateLegacy copies the legacy config dir tree to the new location. It
-// renames the nginx base conf to match the new naming. Source is left intact.
-func migrateLegacy(src, dst string) error {
-	if err := os.MkdirAll(dst, 0o755); err != nil {
-		return err
-	}
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(dst, rel)
-		// Rename old base conf to match new naming.
-		name := info.Name()
-		if name == "00-exebox-base.conf" {
-			target = filepath.Join(filepath.Dir(target), "00-devbox-base.conf")
-		}
-		if info.IsDir() {
-			return os.MkdirAll(target, info.Mode())
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, data, info.Mode())
-	})
 }
 
 // EnsureDirs creates the full directory tree (idempotent).
