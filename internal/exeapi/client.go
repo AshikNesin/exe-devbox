@@ -1,9 +1,9 @@
 // Package exeapi calls the exe.dev HTTPS exec API (POST https://exe.dev/exec).
 // It's the same as running `ssh exe.dev <cmd>` but auth'd via a bearer token,
-// so exebox can automate lobby commands like `domain add` without SSH access.
+// so devbox can automate lobby commands like `domain add` without SSH access.
 //
 // Token source (checked in order):
-//   - config.json "api_token" field (set via exebox config set-token)
+//   - config.json "api_token" field (set via devbox config set-token)
 //   - $EXE_API_TOKEN env var
 //
 // Create one scoped to just the commands you need (e.g. domain add) — see

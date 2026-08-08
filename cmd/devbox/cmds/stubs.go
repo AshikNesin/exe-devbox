@@ -3,7 +3,7 @@ package cmds
 import (
 	"fmt"
 
-	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exe-devbox/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +11,7 @@ import (
 // Used for planned-but-unbuilt subcommands so the CLI compiles and the
 // help tree lists them.
 func newNginxCmd() *cobra.Command {
-	return stub("nginx", "Manage the exebox-managed nginx config (show/edit/reload)")
+	return stub("nginx", "Manage the devbox-managed nginx config (show/edit/reload)")
 }
 
 func stub(use, short string) *cobra.Command {

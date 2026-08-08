@@ -1,4 +1,4 @@
-// Package deps installs the toolchain exebox needs: Node.js (latest LTS),
+// Package deps installs the toolchain devbox needs: Node.js (latest LTS),
 // portless, and nginx. Each installer is idempotent: if the tool is already
 // present, it's a no-op.
 //
@@ -18,7 +18,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ashiknesin/exebox/internal/system"
+	"github.com/ashiknesin/exe-devbox/internal/system"
 )
 
 // installedVersion returns the version string for a binary (e.g. "v22.11.0"),

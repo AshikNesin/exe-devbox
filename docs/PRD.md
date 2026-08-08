@@ -1,4 +1,4 @@
-# PRD — `exebox`
+# PRD — `devbox`
 
 > A Go CLI that automates the "multi-project dev behind nginx + portless on an
 > exe.dev VM" workflow documented in
@@ -21,11 +21,11 @@ subdomain that needs (a) a DNS CNAME to `<vm>.exe.xyz` and (b) an exe.dev
 domain registration. Doing this by hand for each new project is the friction
 we're removing.
 
-`exebox` (binary name **`exebox`**) automates two things:
+`devbox` (binary name **`devbox`**) automates two things:
 
-1. **One-time VM bring-up** (`exebox setup`) — install deps, manage nginx
-   config at `~/.exebox/nginx`, and discover the VM's identity.
-2. **Per-project domain onboarding** (`exebox new --domain …`) — figure out the
+1. **One-time VM bring-up** (`devbox setup`) — install deps, manage nginx
+   config at `~/.devbox/nginx`, and discover the VM's identity.
+2. **Per-project domain onboarding** (`devbox new --domain …`) — figure out the
    DNS provider of the target domain, give the user the easiest possible path
    to add the CNAME (direct Cloudflare API, else manual instructions),
    then emit the exe.dev command/link to register the domain for this VM.
@@ -35,18 +35,18 @@ we're removing.
 ## 2. Goals / Non-goals
 
 ### Goals
-- **G1.** `exebox setup` gets a fresh VM from zero to a working
+- **G1.** `devbox setup` gets a fresh VM from zero to a working
   nginx-on-`:8080` + portless-on-`:8888` reverse-proxy stack, idempotent and
-  re-runnable, with nginx config managed under `~/.exebox/nginx`.
-- **G2.** `exebox setup` auto-discovers the VM's **name** and **default port**
+  re-runnable, with nginx config managed under `~/.devbox/nginx`.
+- **G2.** `devbox setup` auto-discovers the VM's **name** and **default port**
   from the exe.dev reflection endpoint (`reflection.int.exe.xyz`) — no flags
   required for the common case.
-- **G3.** `exebox new --domain <fqdn>` determines the authoritative DNS
+- **G3.** `devbox new --domain <fqdn>` determines the authoritative DNS
   provider of the domain's apex and chooses the right CNAME-add strategy:
   - Cloudflare → direct Cloudflare API (token or exe.dev proxy).
   - Unknown / unsupported provider → clear manual instructions with exact
     record values.
-- **G4.** Every `exebox new` run ends by emitting the **exe.dev suggest link**
+- **G4.** Every `devbox new` run ends by emitting the **exe.dev suggest link**
   to register the domain for this VM (and the share-port link if the VM's
   default port isn't already pointing at nginx).
 - **G5.** Distinguish **on-VM automation** (can run directly) from **owner-only
@@ -55,7 +55,7 @@ we're removing.
 
 ### Non-goals (v1)
 - Managing project dev servers themselves (`pnpm run dev`, HMR wiring). That
-  stays in each project's launcher / the reference doc's `~/bin/exebox-start`.
+  stays in each project's launcher / the reference doc's `~/bin/devbox-start`.
   v1 may *document* it but not own it.
 - TLS/cert automation — exe.dev terminates TLS; nginx is a plain HTTP hop.
 - A TUI/dashboard. Plain CLI output with color + copy-paste blocks.
@@ -90,11 +90,11 @@ route layer so existing `portless run` dev scripts are untouched.
 
 > **Migration verified (2026-07-24):** Caddy `apt-get purge`'d; nginx serves the
 > live Shelley domains on `:8080` with byte-equivalent behavior (HTTP 200,
-> same `307` auth redirect through exe.dev). `exebox doctor` all-green.
+> same `307` auth redirect through exe.dev). `devbox doctor` all-green.
 
 **One nginx quirk worth knowing:** `systemctl reload nginx` can return just
 before workers finish loading new config, so a request fired immediately after
-adding a server block may hit a stale `404`. `exebox`'s `nginx.Reload` retries
+adding a server block may hit a stale `404`. `devbox`'s `nginx.Reload` retries
 + settles 200ms to close that window (see `internal/nginx/conf.go`).
 
 ## 4. Architecture recap
@@ -118,7 +118,7 @@ exe.dev edge ──HTTP──► VM:nginx (:8080)
 - exe.dev's single main proxy port points at nginx (`8080`). All custom
   domains ride that one port → must all go through nginx.
 
-`exebox setup` produces exactly this. `exebox new` adds the public-name
+`devbox setup` produces exactly this. `devbox new` adds the public-name
 entries (DNS + exe.dev registration) and the nginx server block for a project.
 
 ---
@@ -126,27 +126,27 @@ entries (DNS + exe.dev registration) and the nginx server block for a project.
 ## 5. CLI surface
 
 ```
-exebox setup [--vm <name>] [--nginx-port 8080] [--portless-port 8888] [--yes]
-exebox new -d <fqdn> [-d <fqdn> ...] [--project <name>] [--to portless|loopback:<port>] [--public] [--wait]
-exebox dev [project] [--dir <path>] [--runner pnpm|npm] [--foreground]
-exebox status [--no-probe]
-exebox nginx (reload | edit | show)
-exebox doctor
+devbox setup [--vm <name>] [--nginx-port 8080] [--portless-port 8888] [--yes]
+devbox new -d <fqdn> [-d <fqdn> ...] [--project <name>] [--to portless|loopback:<port>] [--public] [--wait]
+devbox dev [project] [--dir <path>] [--runner pnpm|npm] [--foreground]
+devbox status [--no-probe]
+devbox nginx (reload | edit | show)
+devbox doctor
 ```
 
-Global flags: `--config <dir>` (default `~/.exebox`), `--json` (machine
+Global flags: `--config <dir>` (default `~/.devbox`), `--json` (machine
 output), `--yes` (skip confirmations), `-v/--verbose`.
 
 ---
 
-## 6. Feature spec — `exebox setup`
+## 6. Feature spec — `devbox setup`
 
 ### 6.1 What it does (in order)
 
 1. **Discover VM identity** (unless `--vm`/`--port` given):
    - `GET https://reflection.int.exe.xyz/` → `name`.
    - `GET https://reflection.int.exe.xyz/default_port` → `default_port`.
-   - Store in `~/.exebox/config.json`.
+   - Store in `~/.devbox/config.json`.
    - Derive `cname-target = <name>.exe.xyz`.
 
 2. **Install dependencies** (detect & skip if present, pin versions in config):
@@ -167,16 +167,16 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
    - Append `export PORTLESS_PORT=8888 PORTLESS_HTTPS=0` to `~/.bashrc` if
      absent (idempotent marker).
 
-4. **Manage nginx config at `~/.exebox/nginx`** (the user's requested
+4. **Manage nginx config at `~/.devbox/nginx`** (the user's requested
    location) via a one-time **include shim**:
-   - Write `/etc/nginx/conf.d/exebox.conf` (sudo, once) containing a single
+   - Write `/etc/nginx/conf.d/devbox.conf` (sudo, once) containing a single
      resolved include:
-     `include /home/<user>/.exebox/nginx/conf.d/*.conf;`
+     `include /home/<user>/.devbox/nginx/conf.d/*.conf;`
      (home expanded at write time — nginx doesn't expand `~`).
    - All subsequent per-project server blocks live in
-     `~/.exebox/nginx/conf.d/<project>.conf` — **no sudo needed to add or
+     `~/.devbox/nginx/conf.d/<project>.conf` — **no sudo needed to add or
      edit** them.
-   - Seed a base file `~/.exebox/nginx/conf.d/00-exebox-base.conf` with:
+   - Seed a base file `~/.devbox/nginx/conf.d/00-devbox-base.conf` with:
      - a `map $http_upgrade $connection_upgrade` block (for WS/HMR upgrades),
      - a catch-all `server { listen <nginx-port> default_server; return 404; }`.
    - Each per-project server block `listen`s on `<nginx-port>` and uses
@@ -185,11 +185,11 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
    - Reload semantics: **`sudo nginx -t && sudo systemctl reload nginx`**.
      `nginx -t` must run as root — non-root fails on `/run/nginx.pid`
      permission even when config is valid. Reload (not restart) works; it can
-     return just before workers load new config, so `exebox` retries + settles
+     return just before workers load new config, so `devbox` retries + settles
      (see "Why nginx" above).
 
-5. **Write an nginx-reload helper** `~/.exebox/bin/exebox-nginx-reload`
-  (`nginx -t` then `systemctl reload nginx`) and add `~/.exebox/bin`
+5. **Write an nginx-reload helper** `~/.devbox/bin/devbox-nginx-reload`
+  (`nginx -t` then `systemctl reload nginx`) and add `~/.devbox/bin`
   to PATH in `~/.bashrc` (idempotent).
 
 6. **Point exe.dev at nginx** — if `default_port != <nginx-port>`: emit the
@@ -202,21 +202,21 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
    `sudo ss -tlnp` (process names need root), prompts (or proceeds with
    `--yes`), and stops+disables the unit so nginx can take over.
 
-7. **`exebox doctor` checks** at the end: node/npm/portless/nginx on PATH;
+7. **`devbox doctor` checks** at the end: node/npm/portless/nginx on PATH;
    `systemctl is-active nginx portless`; ports `:8080`/`:8888` listening;
    reflection port == nginx port; print a ✅/❌ table.
 
-### 6.2 `~/.exebox` layout
+### 6.2 `~/.devbox` layout
 
 ```
-~/.exebox/
+~/.devbox/
 ├── config.json            # vm name, ports, cname target, dep versions
 ├── nginx/
 │   └── conf.d/
-│       ├── 00-exebox-base.conf   # CLI-managed base (WS map + catch-all)
+│       ├── 00-devbox-base.conf   # CLI-managed base (WS map + catch-all)
 │       └── <project>.conf        # one per project, user-editable
 ├── bin/
-│   └── exebox-nginx-reload
+│   └── devbox-nginx-reload
 └── state/                 # logs, last-run, ids of added domains
 ```
 
@@ -229,12 +229,12 @@ output), `--yes` (skip confirmations), `-v/--verbose`.
 
 ---
 
-## 7. Feature spec — `exebox new --domain <fqdn>`
+## 7. Feature spec — `devbox new --domain <fqdn>`
 
 ### 7.1 Inputs
 
 ```
-exebox new -d new-app.devbox.nesin.io \
+devbox new -d new-app.devbox.nesin.io \
            [-d <more-domains>...]   # repeat for multi-domain backends
            [--project new-app] \
            [--to portless]          # default: portless (= *.localhost route)
@@ -297,9 +297,9 @@ emit both a suggest link *and* a fallback `ssh exe.dev …` shell command.
 - These cannot be run by the CLI (owner SSH key) — they're click-to-run links.
 
 **Step E — Add the nginx route (on-VM, automated).**
-- Write `~/.exebox/nginx/conf.d/<project>.conf`:
+- Write `~/.devbox/nginx/conf.d/<project>.conf`:
   ```nginx
-  # managed by exebox — project: new-app
+  # managed by devbox — project: new-app
   server {
       listen 8080;
       server_name new-app.devbox.nesin.io;
@@ -322,7 +322,7 @@ emit both a suggest link *and* a fallback `ssh exe.dev …` shell command.
   For `--to loopback:<port>`: `proxy_pass http://127.0.0.1:<port>;` and
   `proxy_set_header Host $host;` instead of the `.localhost` rewrite.
 - `nginx -t && systemctl reload nginx`.
-- Record the domain + project in `~/.exebox/state/domains.json`.
+- Record the domain + project in `~/.devbox/state/domains.json`.
 - Print the local sanity command:
   `curl -s -H "Host: <domain>" http://127.0.0.1:<nginx-port>/ | head`.
 
@@ -332,19 +332,19 @@ in the project launcher so Vite HMR works through the proxy (ref doc §4):
 
 ## 8. Supporting commands
 
-- **`exebox status [--no-probe]`** — VM name, proxy port (nginx + portless),
+- **`devbox status [--no-probe]`** — VM name, proxy port (nginx + portless),
   registered domains from `state/domains.json`, and a **live HTTP probe** per
   domain through nginx (`● live [HTTP 200]` / `○ no nginx route` /
   `○ backend not running`), plus `portless list`. `--no-probe` skips the HTTP
   checks for an instant view.
-- **`exebox dev [project]`** — launch a portless project's dev server with the
+- **`devbox dev [project]`** — launch a portless project's dev server with the
   environment Vite HMR needs. See §8a below.
-- **`exebox nginx show | edit | reload`** — `show` prints
-  `~/.exebox/nginx/conf.d/*`; `edit` opens `<project>.conf`; `reload` =
+- **`devbox nginx show | edit | reload`** — `show` prints
+  `~/.devbox/nginx/conf.d/*`; `edit` opens `<project>.conf`; `reload` =
   `nginx -t` + `systemctl reload nginx`.
-- **`exebox doctor`** — the health-check table (also runs at end of `setup`).
+- **`devbox doctor`** — the health-check table (also runs at end of `setup`).
 
-### 8a. Vite HMR behind exe.dev + nginx (`exebox dev`)
+### 8a. Vite HMR behind exe.dev + nginx (`devbox dev`)
 
 **Symptom:** the app loads over HTTPS, but the console shows
 `WebSocket connection to 'ws://groot.localhost:8888/?token=…' failed` and
@@ -366,7 +366,7 @@ if (process.env.VITE_HMR_URL) {
   wsConfig = { server: httpServer, protocol: "wss", host: process.env.VITE_HMR_URL, clientPort: 443 };
 }
 ```
-`exebox dev <project>` sets `VITE_HMR_URL=<public-domain>` (looked up from
+`devbox dev <project>` sets `VITE_HMR_URL=<public-domain>` (looked up from
 state) plus `PORTLESS_PORT`/`PORTLESS_HTTPS=0`, prepends the **nvm bin dir**
 to `PATH` (node/pnpm/portless aren't on a non-login PATH on this VM — without
 it the dev server's child `pnpm` calls fail with `ENOENT`), kills any leftover
@@ -376,12 +376,12 @@ Boot log confirms it: `HMR configured for tunnel: wss://<host>:443`, and
 `/@vite/client` then injects `socketProtocol="wss"`, `hmrPort=443`,
 `socketHost="<public-host>"`. By default it detaches into its own session
 (`--foreground` to keep it in the shell); logs to
-`~/.exebox/state/<project>-dev.log`.
+`~/.devbox/state/<project>-dev.log`.
 
 > **Lesson:** any dev server that self-computes a public/HMR URL from a
 > loopback or `.localhost` address will hand the browser an unreachable
 > (and mixed-content) WebSocket target when served through exe.dev + a proxy.
-> Always launch portless dev servers via `exebox dev` (or set `VITE_HMR_URL`
+> Always launch portless dev servers via `devbox dev` (or set `VITE_HMR_URL`
 > by hand) — `pnpm run dev` alone reproduces the bug.
 
 ---
@@ -414,8 +414,8 @@ suggest link so the user can apply it in one click.
   shell-out to `dig` required. Note: DC discovery TXT records are often
   scheme-less (`api.cloudflare.com/...`), so we accept any host/path token.
 - Telemetry: **none**. Purely local.
-- **Build/install:** `make install` builds to `~/.local/bin/exebox` and
-  regenerates bash completion to `~/dotfiles/bash/exebox-completion.bash`
+- **Build/install:** `make install` builds to `~/.local/bin/devbox` and
+  regenerates bash completion to `~/dotfiles/bash/devbox-completion.bash`
   (sourced from `~/.bashrc`).
 
 ---
@@ -427,27 +427,27 @@ suggest link so the user can apply it in one click.
 | R1 | Cloudflare DC can't be one-click without template onboarding. | Ship direct-API fallback now; track real DC as a post-onboarding epic. |
 | R2 | ✅ Resolved: CNAME target is `<vm>.exe.xyz` (`exe.dev` doesn't resolve). | Confirmed via cnames.md + reflection. |
 | R3 | Node LTS install method: NodeSource apt vs nvm. | NodeSource for system `/usr/bin/node` (services need absolute path); reuse nvm if already newer. |
-| R4 | Should `exebox new` also write project launchers / HMR env? | v1: print only. v2: opt-in `--wire`. |
+| R4 | Should `devbox new` also write project launchers / HMR env? | v1: print only. v2: opt-in `--wire`. |
 | R5 | ✅ Resolved: suggest links take the **lobby command** (e.g. `share port <vm> <n>`), not `ssh exe.dev …`. `domain add` isn't in the suggestable set → emit suggest link + fallback shell command. | Confirmed against exe.dev/docs/suggest-links.md + cli-domain.md. |
 | R6 | Public-suffix list staleness for apex detection. | Bundle `x/net/publicsuffix` (compiled-in DAT); accept `--apex` override. |
-| R7 | ✅ Resolved: re-running `exebox new` rewrites `<project>.conf` wholesale (deterministic); `exebox setup` regenerates `00-exebox-base.conf`. State file upserts by FQDN, not duplicated. | Shipped. |
-| R8 | ✅ Resolved: `/etc/nginx/conf.d/exebox.conf` resolves `$HOME` at write time; `exebox setup` rewrites it idempotently if the path changes. | Shipped. |
+| R7 | ✅ Resolved: re-running `devbox new` rewrites `<project>.conf` wholesale (deterministic); `devbox setup` regenerates `00-devbox-base.conf`. State file upserts by FQDN, not duplicated. | Shipped. |
+| R8 | ✅ Resolved: `/etc/nginx/conf.d/devbox.conf` resolves `$HOME` at write time; `devbox setup` rewrites it idempotently if the path changes. | Shipped. |
 | R9 | **New (from cutover):** `nginx -t` must run as root (non-root fails on `/run/nginx.pid` perm). | Fixed: `nginx.Test()` uses `system.AsRoot`. |
 | R10 | **New:** `npm i -g portless` needs sudo (NodeSource globals → `/usr/lib/node_modules`). | Fixed: `deps.InstallPortless` uses `sudo npm`. |
 | R11 | **New:** `ss -tlnp` hides process names without root → Caddy handoff detection failed. | Fixed: `portOwner` runs `sudo ss` + trims quotes. |
 | R12 | **New:** `systemctl reload nginx` has a stale-routing window after adding a server block. | Fixed: `nginx.Reload` retries + 200ms settle. |
-| R13 | ✅ Resolved: `exebox dev <project>` launches portless dev servers with `VITE_HMR_URL=<public-host>` + nvm bin on PATH (resolves the `pnpm ENOENT` child-spawn failure + the broken `ws://<project>.localhost:8888` HMR target). | Shipped. |
+| R13 | ✅ Resolved: `devbox dev <project>` launches portless dev servers with `VITE_HMR_URL=<public-host>` + nvm bin on PATH (resolves the `pnpm ENOENT` child-spawn failure + the broken `ws://<project>.localhost:8888` HMR target). | Shipped. |
 
 ---
 
 ## 12. Milestones
 
-- ✅ **M1 — Skeleton:** Go module, cobra skeleton, `exebox doctor` + reflection
+- ✅ **M1 — Skeleton:** Go module, cobra skeleton, `devbox doctor` + reflection
   discovery + `--json`. (shipped)
-- ✅ **M2 — `exebox setup`:** dep install (node/portless/nginx), portless daemon,
-  `~/.exebox/nginx` management + Caddy handoff, share-port suggest link.
+- ✅ **M2 — `devbox setup`:** dep install (node/portless/nginx), portless daemon,
+  `~/.devbox/nginx` management + Caddy handoff, share-port suggest link.
   (shipped)
-- ✅ **M3 — `exebox new`:** apex/provider detection, manual flow + suggest link +
+- ✅ **M3 — `devbox new`:** apex/provider detection, manual flow + suggest link +
   nginx server block write + reload. Multi-domain + loopback backends.
   (shipped)
 - ✅ **M4 — Cloudflare API path:** token-based + exe.dev proxy CNAME apply.

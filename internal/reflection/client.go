@@ -24,7 +24,7 @@ type VM struct {
 	Emoji string `json:"emoji"`
 }
 
-// Identity aggregates everything exebox learns about the VM from reflection.
+// Identity aggregates everything devbox learns about the VM from reflection.
 type Identity struct {
 	Name        string `json:"name"`        // e.g. "nesins-devbox"
 	Email       string `json:"email,omitempty"`       // owner email
@@ -81,7 +81,7 @@ func (c *Client) Integration(ctx context.Context, name string) (*Integration, er
 
 // Discover fetches the full VM identity (name + email + default port).
 // All three endpoints must succeed; missing any is treated as an error since
-// exebox's whole UX assumes it knows the VM's name and port.
+// devbox's whole UX assumes it knows the VM's name and port.
 func (c *Client) Discover(ctx context.Context) (Identity, error) {
 	vm, err := c.vm(ctx)
 	if err != nil {

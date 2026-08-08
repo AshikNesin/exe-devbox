@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ashiknesin/exebox/internal/output"
-	"github.com/ashiknesin/exebox/internal/portless"
-	"github.com/ashiknesin/exebox/internal/reflection"
-	"github.com/ashiknesin/exebox/internal/system"
+	"github.com/ashiknesin/exe-devbox/internal/output"
+	"github.com/ashiknesin/exe-devbox/internal/portless"
+	"github.com/ashiknesin/exe-devbox/internal/reflection"
+	"github.com/ashiknesin/exe-devbox/internal/system"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func newStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
 		Short: "Show VM identity, proxy state, registered domains (live), and portless routes",
-		Long: `Print a live snapshot of what exebox has wired up on this VM:
+		Long: `Print a live snapshot of what devbox has wired up on this VM:
   - VM identity (from reflection)
   - proxy ports: nginx (default port) + portless daemon
   - each registered domain probed through nginx (200 live / 5xx backend down / 404 no route)
@@ -36,7 +36,7 @@ Use --no-probe to skip the per-domain HTTP checks (offline/instant).`,
 	return cmd
 }
 
-// statusReport is the JSON payload for `exebox status`.
+// statusReport is the JSON payload for `devbox status`.
 type statusReport struct {
 	VM            *reflection.Identity `json:"vm,omitempty"`
 	NginxPort     int                  `json:"nginx_port"`
@@ -165,7 +165,7 @@ func classify(code int, backend string) (bool, string) {
 
 func renderStatus(r statusReport) {
 	out := output.Global
-	out.Heading("exebox status")
+	out.Heading("devbox status")
 
 	if r.VM != nil {
 		out.Info("VM: %s  port: %d  cname: %s", r.VM.Name, r.VM.DefaultPort, r.VM.CNAME())
@@ -190,7 +190,7 @@ func renderStatus(r statusReport) {
 
 	// domains
 	if len(r.Domains) == 0 {
-		out.Info("domains: (none registered — run: exebox new -d <fqdn>)")
+		out.Info("domains: (none registered — run: devbox new -d <fqdn>)")
 	} else {
 		out.Line("")
 		out.Line("  domains (live HTTP probe through nginx):")

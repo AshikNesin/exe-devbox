@@ -1,9 +1,9 @@
-# exebox Makefile
+# devbox Makefile
 # Common dev workflows: build, install (binary + bash completion), test, run.
 
-BINARY   := exebox
+BINARY   := devbox
 BIN_DIR  := $(HOME)/.local/bin
-PKG      := ./cmd/exebox
+PKG      := ./cmd/devbox
 VERSION  := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 .PHONY: all build install completion run test vet fmt clean
@@ -21,10 +21,12 @@ install: build
 	@mkdir -p $(BIN_DIR)
 	@cp $(BINARY) $(BIN_DIR)/$(BINARY)
 	@echo "→ auto-installing shell completion"
-	@mkdir -p $(HOME)/.local/share/exebox
-	@$(BIN_DIR)/$(BINARY) completion bash > $(HOME)/.local/share/exebox/completion.bash
-	@grep -q 'exebox/completion.bash' $(HOME)/.bashrc 2>/dev/null || \
-		printf '\n# exebox shell completion\n[ -f $$HOME/.local/share/exebox/completion.bash ] && source $$HOME/.local/share/exebox/completion.bash\n' >> $(HOME)/.bashrc
+	@mkdir -p $(HOME)/.local/share/devbox
+	@$(BIN_DIR)/$(BINARY) completion bash > $(HOME)/.local/share/devbox/completion.bash
+	@grep -q 'devbox/completion.bash' $(HOME)/.bashrc 2>/dev/null || \
+		printf '\n# devbox shell completion\n[ -f $$HOME/.local/share/devbox/completion.bash ] && source $$HOME/.local/share/devbox/completion.bash\n' >> $(HOME)/.bashrc
+	@echo "→ creating exe-devbox symlink alias"
+	@ln -sf $(BINARY) $(BIN_DIR)/exe-devbox
 	@echo "✓ installed. Open a new shell or: source ~/.bashrc"
 
 # completion: regenerate the completion script (for development use).
@@ -56,5 +58,5 @@ release:
 	@echo "→ tagging $(VERSION) (CI will build + publish)"
 	@git tag -a $(VERSION) -m "$(VERSION)"
 	@git push origin $(VERSION)
-	@echo "✓ tag pushed — watch CI: https://github.com/AshikNesin/exebox/actions"
-	@echo "  release will appear at: https://github.com/AshikNesin/exebox/releases/tag/$(VERSION)"
+	@echo "✓ tag pushed — watch CI: https://github.com/AshikNesin/exe-devbox/actions"
+	@echo "  release will appear at: https://github.com/AshikNesin/exe-devbox/releases/tag/$(VERSION)"

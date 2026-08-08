@@ -12,7 +12,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ashiknesin/exebox/internal/system"
+	"github.com/ashiknesin/exe-devbox/internal/system"
 )
 
 // DaemonPort is the shared portless port the whole architecture assumes.

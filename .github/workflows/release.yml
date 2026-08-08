@@ -33,12 +33,12 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
             go build -ldflags "-s -w -X main.Version=$VERSION" \
-            -o exebox-linux-amd64 ./cmd/exebox
-          chmod +x exebox-linux-amd64
+            -o devbox-linux-amd64 ./cmd/devbox
+          chmod +x devbox-linux-amd64
 
       - name: Create release and upload asset
         uses: softprops/action-gh-release@v2
         with:
-          files: exebox-linux-amd64
+          files: devbox-linux-amd64
           generate_release_notes: true
           body_path: CHANGELOG.md

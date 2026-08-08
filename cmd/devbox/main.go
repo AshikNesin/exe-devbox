@@ -1,4 +1,4 @@
-// Command exebox automates multi-project dev behind nginx + portless on an
+// Command devbox automates multi-project dev behind nginx + portless on an
 // exe.dev VM. See docs/PRD.md.
 package main
 
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ashiknesin/exebox/cmd/exebox/cmds"
+	"github.com/ashiknesin/exe-devbox/cmd/devbox/cmds"
 )
 
 // Version is set via -ldflags at build time.
@@ -18,4 +18,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
+	cmds.MaybeInstallAlias()
 }

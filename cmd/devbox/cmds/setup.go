@@ -8,15 +8,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ashiknesin/exebox/internal/config"
-	"github.com/ashiknesin/exebox/internal/deps"
-	"github.com/ashiknesin/exebox/internal/nginx"
-	"github.com/ashiknesin/exebox/internal/notify"
-	"github.com/ashiknesin/exebox/internal/output"
-	"github.com/ashiknesin/exebox/internal/portless"
-	"github.com/ashiknesin/exebox/internal/reflection"
-	"github.com/ashiknesin/exebox/internal/shell"
-	"github.com/ashiknesin/exebox/internal/system"
+	"github.com/ashiknesin/exe-devbox/internal/config"
+	"github.com/ashiknesin/exe-devbox/internal/deps"
+	"github.com/ashiknesin/exe-devbox/internal/nginx"
+	"github.com/ashiknesin/exe-devbox/internal/notify"
+	"github.com/ashiknesin/exe-devbox/internal/output"
+	"github.com/ashiknesin/exe-devbox/internal/portless"
+	"github.com/ashiknesin/exe-devbox/internal/reflection"
+	"github.com/ashiknesin/exe-devbox/internal/shell"
+	"github.com/ashiknesin/exe-devbox/internal/system"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +36,7 @@ Steps:
   1. discover VM name + default port from reflection
   2. install node (LTS), portless, nginx (skip if present)
   3. ensure the shared portless daemon on :8888 (HTTP)
-  4. write nginx config under ~/.exebox/nginx + the /etc include shim
+  4. write nginx config under ~/.devbox/nginx + the /etc include shim
   5. point exe.dev's proxy at nginx (prints a suggest link if not already)
   6. run doctor`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,7 +57,7 @@ Steps:
 	cmd.Flags().StringVar(&vmName, "vm", "", "VM name (default: auto-discovered from reflection)")
 	cmd.Flags().StringVar(&nginxPortStr, "nginx-port", "", "port for nginx to listen on (default: reflection default port, or 8000)")
 	cmd.Flags().StringVar(&portlessPortStr, "portless-port", "", "port for the portless daemon (default 8888)")
-	cmd.Flags().StringVar(&defaultDomain, "default-domain", "", "default domain apex for deriving FQDNs in 'exebox new' (e.g. nesin.io)")
+	cmd.Flags().StringVar(&defaultDomain, "default-domain", "", "default domain apex for deriving FQDNs in 'devbox new' (e.g. nesin.io)")
 	return cmd
 }
 
@@ -124,7 +124,7 @@ func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupRes
 
 	// ensure config dir (New() may have auto-migrated from ~/.exe-devbox)
 	if config.WasMigrated() {
-		out.OK("migrated config from ~/.exe-devbox -> ~/.exebox")
+		out.OK("migrated config from ~/.exe-devbox -> ~/.devbox")
 	}
 	if err := p.EnsureDirs(); err != nil {
 		return setupResult{report: report, ok: false, errMsg: err.Error()}
@@ -265,14 +265,14 @@ func runSetup(ctx context.Context, opts setupOpts, root *cobra.Command) setupRes
 	}
 
 	// Subtle next-step hint: domain registration.
-	// Only show if no API token is set yet (otherwise exebox new handles it
+	// Only show if no API token is set yet (otherwise devbox new handles it
 	// automatically and there's nothing for the user to do).
 	if cfg.APIToken == "" {
 		out.Heading("next steps")
 		out.Info("wire a public domain to a project on this VM:")
-		out.Block("exebox new -d myapp.example.com --project myapp")
+		out.Block("devbox new -d myapp.example.com --project myapp")
 		out.Info("to skip the manual domain registration step, set up an API token:")
-		out.Block("exebox set-token --help")
+		out.Block("devbox set-token --help")
 	}
 
 	return setupResult{report: report, ok: true}
@@ -336,10 +336,10 @@ func writeNginxConfigs(p config.Paths, port int) error {
 	if err := os.WriteFile(p.BaseConf(), []byte(base), 0o644); err != nil {
 		return err
 	}
-	// include shim at /etc/nginx/conf.d/exebox.conf (root-owned). nginx doesn't
+	// include shim at /etc/nginx/conf.d/devbox.conf (root-owned). nginx doesn't
 	// expand ~, so we resolve the absolute path here.
 	shim := nginx.IncludeShim(p.Nginx)
-	tmp, err := os.CreateTemp("", "exebox-shim-*.conf")
+	tmp, err := os.CreateTemp("", "devbox-shim-*.conf")
 	if err != nil {
 		return err
 	}
@@ -348,7 +348,7 @@ func writeNginxConfigs(p config.Paths, port int) error {
 		return err
 	}
 	tmp.Close()
-	target := "/etc/nginx/conf.d/exebox.conf"
+	target := "/etc/nginx/conf.d/devbox.conf"
 	if out, err := system.AsRoot("cp", tmp.Name(), target).CombinedOutput(); err != nil {
 		return fmt.Errorf("write %s: %w: %s", target, err, out)
 	}

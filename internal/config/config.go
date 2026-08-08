@@ -1,6 +1,6 @@
-// Package config owns the ~/.exebox directory layout: where files live,
+// Package config owns the ~/.devbox directory layout: where files live,
 // the persisted config.json, and the domains state file. Centralizing paths
-// here means the rest of the CLI never hardcodes "~/.exebox".
+// here means the rest of the CLI never hardcodes "~/.devbox".
 package config
 
 import (
@@ -11,15 +11,15 @@ import (
 	"path/filepath"
 )
 
-const DirName = ".exebox"
+const DirName = ".devbox"
 
-// legacyDirName is the pre-rename config dir. We auto-migrate from it if the
-// new dir doesn't exist yet (one-time, on first run after upgrading to exebox).
-const legacyDirName = ".exe-devbox"
+// legacyDirNames are pre-rename config dirs. We auto-migrate from any of them
+// if the new dir doesn't exist yet (one-time, on first run after upgrading).
+var legacyDirNames = []string{".exebox", ".exe-devbox"}
 
 // Paths holds resolved filesystem locations for one config root.
 type Paths struct {
-	Root    string // ~/.exebox
+	Root    string // ~/.devbox
 	Config  string // config.json
 	Bin     string // bin/
 	Nginx   string // nginx/conf.d/
@@ -27,8 +27,9 @@ type Paths struct {
 	Domains string // state/domains.json
 }
 
-// New resolves paths for the given root. If root is empty, uses ~/.exebox.
-// On first use it auto-migrates the legacy ~/.exe-devbox dir if present.
+// New resolves paths for the given root. If root is empty, uses ~/.devbox.
+// On first use it auto-migrates a legacy ~/.exebox or ~/.exe-devbox dir if
+// present.
 func New(root string) (Paths, error) {
 	if root == "" {
 		home, err := os.UserHomeDir()
@@ -36,12 +37,15 @@ func New(root string) (Paths, error) {
 			return Paths{}, err
 		}
 		root = filepath.Join(home, DirName)
-		// One-time migration from the pre-rename ~/.exe-devbox.
+		// One-time migration from a pre-rename dir.
 		if _, err := os.Stat(root); errors.Is(err, os.ErrNotExist) {
-			legacy := filepath.Join(home, legacyDirName)
-			if _, err := os.Stat(legacy); err == nil {
-				if err := migrateLegacy(legacy, root); err == nil {
-					migrated = true
+			for _, legacy := range legacyDirNames {
+				legacyPath := filepath.Join(home, legacy)
+				if _, err := os.Stat(legacyPath); err == nil {
+					if err := migrateLegacy(legacyPath, root); err == nil {
+						migrated = true
+						break
+					}
 				}
 			}
 		}
@@ -64,12 +68,11 @@ func New(root string) (Paths, error) {
 // migrated records whether a legacy dir migration happened during New().
 var migrated bool
 
-// WasMigrated reports whether the last New() call migrated from ~/.exe-devbox.
+// WasMigrated reports whether the last New() call migrated from a legacy dir.
 func WasMigrated() bool { return migrated }
 
 // migrateLegacy copies the legacy config dir tree to the new location. It
-// renames the nginx base conf from 00-devbox-base.conf to
-// 00-exebox-base.conf to match the new naming. Source is left intact.
+// renames the nginx base conf to match the new naming. Source is left intact.
 func migrateLegacy(src, dst string) error {
 	if err := os.MkdirAll(dst, 0o755); err != nil {
 		return err
@@ -83,9 +86,10 @@ func migrateLegacy(src, dst string) error {
 			return err
 		}
 		target := filepath.Join(dst, rel)
-		// Rename the base conf file to match new naming.
-		if info.Name() == "00-devbox-base.conf" {
-			target = filepath.Join(filepath.Dir(target), "00-exebox-base.conf")
+		// Rename old base conf to match new naming.
+		name := info.Name()
+		if name == "00-exebox-base.conf" {
+			target = filepath.Join(filepath.Dir(target), "00-devbox-base.conf")
 		}
 		if info.IsDir() {
 			return os.MkdirAll(target, info.Mode())
@@ -108,8 +112,8 @@ func (p Paths) EnsureDirs() error {
 	return nil
 }
 
-// File holds the persisted ~/.exebox/config.json. It's the cache of what
-// exebox discovered/configured so subsequent runs don't need to re-discover.
+// File holds the persisted ~/.devbox/config.json. It's the cache of what
+// devbox discovered/configured so subsequent runs don't need to re-discover.
 type File struct {
 	VMName        string `json:"vm_name,omitempty"`
 	Email         string `json:"email,omitempty"`
@@ -118,7 +122,7 @@ type File struct {
 	PortlessPort  int    `json:"portless_port,omitempty"`
 	CNAMETarget   string `json:"cname_target,omitempty"`
 	APIToken      string `json:"api_token,omitempty"` // exe.dev HTTPS API token (scoped to domain add)
-	DefaultDomain string `json:"default_domain,omitempty"` // e.g. nesin.io — used to derive FQDNs in exebox new
+	DefaultDomain string `json:"default_domain,omitempty"` // e.g. nesin.io — used to derive FQDNs in devbox new
 }
 
 // Load reads config.json; returns a zero File (no error) if it doesn't exist yet.
@@ -150,7 +154,7 @@ func (p Paths) Save(f File) error {
 	return os.WriteFile(p.Config, b, 0o644)
 }
 
-// Domain is one row in state/domains.json: a public FQDN exebox wired up.
+// Domain is one row in state/domains.json: a public FQDN devbox wired up.
 type Domain struct {
 	Domain  string `json:"domain"`            // public FQDN, e.g. new-app.devbox.nesin.io
 	Project string `json:"project"`           // portless route name -> <project>.localhost
@@ -207,5 +211,5 @@ func (p Paths) ProjectConf(project string) string {
 
 // BaseConf returns the CLI-managed nginx base config path.
 func (p Paths) BaseConf() string {
-	return filepath.Join(p.Nginx, "00-exebox-base.conf")
+	return filepath.Join(p.Nginx, "00-devbox-base.conf")
 }

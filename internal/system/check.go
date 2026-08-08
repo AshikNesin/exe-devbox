@@ -1,4 +1,4 @@
-// Package system wraps the OS-level probes exebox needs: binary lookups,
+// Package system wraps the OS-level probes devbox needs: binary lookups,
 // systemd unit state, and whether a port is listening. doctor and setup both
 // call into these so health checks aren't duplicated.
 package system

@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exe-devbox/internal/output"
 	"github.com/spf13/cobra"
 )
 
-const githubLatestURL = "https://api.github.com/repos/AshikNesin/exebox/releases/latest"
-const rawBinaryURL = "https://github.com/AshikNesin/exebox/releases/download/%s/exebox-linux-amd64"
+const githubLatestURL = "https://api.github.com/repos/AshikNesin/exe-devbox/releases/latest"
+const rawBinaryURL = "https://github.com/AshikNesin/exe-devbox/releases/download/%s/devbox-linux-amd64"
 
 // appVersion is injected from root.go at NewRoot time.
 var appVersion string
@@ -29,7 +29,7 @@ func newUpdateCmd(version string) *cobra.Command {
 	appVersion = version
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update exebox to the latest GitHub release",
+		Short: "Update devbox to the latest GitHub release",
 		RunE:  runUpdate,
 	}
 	cmd.Flags().Bool("check", false, "only check for updates, don't install")
@@ -69,7 +69,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	if checkOnly {
 		output.Global.Info("update available: %s → %s", current, rel.TagName)
-		output.Global.Info("run 'exebox update' to install")
+		output.Global.Info("run 'devbox update' to install")
 		return nil
 	}
 
@@ -84,7 +84,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	// Download to a temp file in the same directory (atomic rename).
 	dir := filepath.Dir(exePath)
-	tmp, err := os.CreateTemp(dir, ".exebox-update-*")
+	tmp, err := os.CreateTemp(dir, ".devbox-update-*")
 	if err != nil {
 		return fmt.Errorf("creating temp file: %w", err)
 	}

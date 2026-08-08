@@ -24,7 +24,7 @@ func TestInstallCompletionBothShells(t *testing.T) {
 		}
 	}
 
-	root := &cobra.Command{Use: "exebox"}
+	root := &cobra.Command{Use: "devbox"}
 	root.AddCommand(&cobra.Command{Use: "new"})
 
 	results, err := InstallCompletion(root)
@@ -42,7 +42,7 @@ func TestInstallCompletionBothShells(t *testing.T) {
 		}
 		needle := "completion.bash"
 		if rc == ".zshrc" {
-			needle = "/_exebox"
+			needle = "/_devbox"
 		}
 		if !strings.Contains(string(b), needle) {
 			t.Errorf("%s does not contain %q\n%s", rc, needle, string(b))
@@ -50,8 +50,8 @@ func TestInstallCompletionBothShells(t *testing.T) {
 	}
 
 	// Scripts should exist.
-	for _, sh := range []string{"completion.bash", "_exebox"} {
-		p := filepath.Join(tmp, ".local", "share", "exebox", sh)
+	for _, sh := range []string{"completion.bash", "_devbox"} {
+		p := filepath.Join(tmp, ".local", "share", "devbox", sh)
 		if _, err := os.Stat(p); err != nil {
 			t.Errorf("script %s not created: %v", sh, err)
 		}
@@ -65,7 +65,7 @@ func TestInstallCompletionIdempotent(t *testing.T) {
 	t.Setenv("SHELL", "/bin/bash")
 	_ = os.WriteFile(filepath.Join(tmp, ".bashrc"), []byte("# test\n"), 0o644)
 
-	root := &cobra.Command{Use: "exebox"}
+	root := &cobra.Command{Use: "devbox"}
 	if _, err := InstallCompletion(root); err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestInstallCompletionIdempotent(t *testing.T) {
 	b, _ := os.ReadFile(filepath.Join(tmp, ".bashrc"))
 	// The single source line references the path twice ([ -f X ] && source X),
 	// so count header lines instead of path occurrences.
-	if c := strings.Count(string(b), "# exebox shell completion"); c != 1 {
+	if c := strings.Count(string(b), "# devbox shell completion"); c != 1 {
 		t.Errorf("want 1 header line, got %d\n%s", c, string(b))
 	}
 }
@@ -89,7 +89,7 @@ func TestInstallCompletionSkipsMissingZshrc(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(tmp, ".bashrc"), []byte("# test\n"), 0o644)
 	// no .zshrc
 
-	root := &cobra.Command{Use: "exebox"}
+	root := &cobra.Command{Use: "devbox"}
 	results, err := InstallCompletion(root)
 	if err != nil {
 		t.Fatal(err)
@@ -107,7 +107,7 @@ func TestInstallCompletionSkipsMissingZshrc(t *testing.T) {
 		t.Error(".zshrc was created; should not have been")
 	}
 	// zsh completion script still generated.
-	if _, err := os.Stat(filepath.Join(tmp, ".local", "share", "exebox", "_exebox")); err != nil {
+	if _, err := os.Stat(filepath.Join(tmp, ".local", "share", "devbox", "_devbox")); err != nil {
 		t.Errorf("zsh completion script not created: %v", err)
 	}
 }

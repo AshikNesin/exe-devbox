@@ -1,5 +1,5 @@
 // Package dns resolves the authoritative DNS provider of a domain's apex and
-// classifies it for the CNAME-add strategy in `exebox new`:
+// classifies it for the CNAME-add strategy in `devbox new`:
 //
 //   - cloudflare: NS contains *.cloudflare.com (direct API apply)
 //   - manual:     anything else (print exact record values)

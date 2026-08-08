@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ashiknesin/exebox/internal/cloudflare"
-	"github.com/ashiknesin/exebox/internal/config"
-	"github.com/ashiknesin/exebox/internal/dns"
-	"github.com/ashiknesin/exebox/internal/exeapi"
-	"github.com/ashiknesin/exebox/internal/nginx"
-	"github.com/ashiknesin/exebox/internal/notify"
-	"github.com/ashiknesin/exebox/internal/output"
-	"github.com/ashiknesin/exebox/internal/portless"
-	"github.com/ashiknesin/exebox/internal/reflection"
+	"github.com/ashiknesin/exe-devbox/internal/cloudflare"
+	"github.com/ashiknesin/exe-devbox/internal/config"
+	"github.com/ashiknesin/exe-devbox/internal/dns"
+	"github.com/ashiknesin/exe-devbox/internal/exeapi"
+	"github.com/ashiknesin/exe-devbox/internal/nginx"
+	"github.com/ashiknesin/exe-devbox/internal/notify"
+	"github.com/ashiknesin/exe-devbox/internal/output"
+	"github.com/ashiknesin/exe-devbox/internal/portless"
+	"github.com/ashiknesin/exe-devbox/internal/reflection"
 	"github.com/spf13/cobra"
 )
 
@@ -42,12 +42,12 @@ func newNewCmd() *cobra.Command {
   4. writes the nginx server block and reloads nginx
 
 Usage modes:
-  exebox new -d myapp.example.com            explicit domain
-  exebox new groot                            derive <project>.<default-domain>
-  exebox new                                  interactive: pick from ~/Code projects
+  devbox new -d myapp.example.com            explicit domain
+  devbox new groot                            derive <project>.<default-domain>
+  devbox new                                  interactive: pick from ~/Code projects
 
 If --domain is omitted, the FQDN is derived as <project>.<default-domain>
-where <default-domain> is set during 'exebox setup --default-domain'.
+where <default-domain> is set during 'devbox setup --default-domain'.
 Multiple domains: repeat --domain (shares one backend).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 && project == "" {
@@ -120,7 +120,7 @@ func (o *newOpts) resolve(flagsDomains []string) (newOpts, error) {
 	if o.project != "" {
 		cfg, _ := loadConfig()
 		if cfg.DefaultDomain == "" {
-			return *o, fmt.Errorf("no --domain given and no default domain set; run: exebox setup --default-domain <apex>")
+			return *o, fmt.Errorf("no --domain given and no default domain set; run: devbox setup --default-domain <apex>")
 		}
 		o.domains = []string{o.project + "." + cfg.DefaultDomain}
 		out.Info("derived domain: %s", o.domains[0])
@@ -139,7 +139,7 @@ func (o *newOpts) resolve(flagsDomains []string) (newOpts, error) {
 
 	cfg, _ := loadConfig()
 	if cfg.DefaultDomain == "" {
-		return *o, fmt.Errorf("no default domain set; run: exebox setup --default-domain <apex>")
+		return *o, fmt.Errorf("no default domain set; run: devbox setup --default-domain <apex>")
 	}
 	o.domains = []string{o.project + "." + cfg.DefaultDomain}
 	out.OK("project: %s  domain: %s", o.project, o.domains[0])
@@ -365,7 +365,7 @@ func loadConfig() (config.File, error) {
 }
 
 // pickProjectInteractive scans ~/Code for directories containing a package.json
-// with a dev script, filters out projects already registered in exebox state,
+// with a dev script, filters out projects already registered in devbox state,
 // and prompts the user to pick one. Returns the chosen project name.
 func pickProjectInteractive() (string, error) {
 	out := output.Global

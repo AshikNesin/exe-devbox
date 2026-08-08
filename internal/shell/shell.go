@@ -1,6 +1,6 @@
 // Package shell handles shell detection and auto-installation of completion
 // scripts. It generates completion scripts for all supported shells (bash and
-// zsh), writes them to ~/.local/share/exebox/, and injects a source line into
+// zsh), writes them to ~/.local/share/devbox/, and injects a source line into
 // the corresponding rc file (~/.bashrc and ~/.zshrc) whenever that rc file
 // already exists or is the detected login shell.
 package shell
@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// supportedShells is the fixed list of shells exebox installs completion for.
+// supportedShells is the fixed list of shells devbox installs completion for.
 var supportedShells = []string{"bash", "zsh"}
 
 // CompletionResult holds what happened during auto-completion setup for one shell.
@@ -52,7 +52,7 @@ func DetectedShell() string {
 // InstallCompletion generates and installs shell completion for every supported
 // shell (bash and zsh). For each shell it:
 //  1. Generates the completion script via cobra.
-//  2. Writes it to ~/.local/share/exebox/completion.bash (or _exebox for zsh).
+//  2. Writes it to ~/.local/share/devbox/completion.bash (or _devbox for zsh).
 //  3. Adds a source line to ~/.bashrc / ~/.zshrc (idempotent) when that rc file
 //     already exists or is the detected login shell.
 //
@@ -83,11 +83,11 @@ func installForShell(root *cobra.Command, sh, home string, force bool) (*Complet
 	var scriptPath, rcFile, rcLine string
 	switch sh {
 	case "zsh":
-		scriptPath = filepath.Join(home, ".local", "share", "exebox", "_exebox")
+		scriptPath = filepath.Join(home, ".local", "share", "devbox", "_devbox")
 		rcFile = filepath.Join(home, ".zshrc")
 		rcLine = fmt.Sprintf("[ -f %s ] && source %s", scriptPath, scriptPath)
 	default: // bash
-		scriptPath = filepath.Join(home, ".local", "share", "exebox", "completion.bash")
+		scriptPath = filepath.Join(home, ".local", "share", "devbox", "completion.bash")
 		rcFile = filepath.Join(home, ".bashrc")
 		rcLine = fmt.Sprintf("[ -f %s ] && source %s", scriptPath, scriptPath)
 	}
@@ -136,7 +136,7 @@ func installForShell(root *cobra.Command, sh, home string, force bool) (*Complet
 	if len(content) > 0 && !strings.HasSuffix(string(content), "\n") {
 		content = append(content, '\n')
 	}
-	header := "# exebox shell completion\n"
+	header := "# devbox shell completion\n"
 	content = append(content, []byte(header+rcLine+"\n")...)
 	if err := os.WriteFile(rcFile, content, 0o644); err != nil {
 		return nil, fmt.Errorf("write %s: %w", filepath.Base(rcFile), err)

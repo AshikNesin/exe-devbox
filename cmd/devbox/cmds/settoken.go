@@ -1,26 +1,26 @@
 package cmds
 
 import (
-	"github.com/ashiknesin/exebox/internal/output"
+	"github.com/ashiknesin/exe-devbox/internal/output"
 	"github.com/spf13/cobra"
 )
 
 func newSetTokenCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-token <token>",
-		Short: "Store an exe.dev API token so exebox can auto-register domains",
-		Long: `Stores an exe.dev HTTPS API token in ~/.exebox/config.json. exebox uses it
+		Short: "Store an exe.dev API token so devbox can auto-register domains",
+		Long: `Stores an exe.dev HTTPS API token in ~/.devbox/config.json. devbox uses it
 to call "domain add" automatically via the exe.dev HTTPS API, removing the
-manual registration step from exebox new.
+manual registration step from devbox new.
 
 Create a token scoped to ONLY "domain add" by running this on your local
 machine (where ssh exe.dev works):
 
-  ssh exe.dev ssh-key generate-api-key --cmds="domain add" --exp=never --label=exebox
+  ssh exe.dev ssh-key generate-api-key --cmds="domain add" --exp=never --label=devbox
 
 Then paste the resulting token here:
 
-  exebox set-token exe0.eyJjbW...your-token...
+  devbox set-token exe0.eyJjbW...your-token...
 
 The token is stored in plaintext in config.json. It can only add domains —
 nothing else.
@@ -41,7 +41,7 @@ nothing else.
 				return err
 			}
 			output.Global.OK("API token saved to %s", p.Config)
-			output.Global.Info("exebox new will now auto-register domains with exe.dev")
+			output.Global.Info("devbox new will now auto-register domains with exe.dev")
 			return nil
 		},
 	}

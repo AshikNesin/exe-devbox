@@ -3,7 +3,7 @@
 // reflection endpoint's integration list; if the integration isn't attached,
 // all calls are no-ops (the caller never sees an error).
 //
-// This keeps exebox quiet on VMs that opted out of push notifications.
+// This keeps devbox quiet on VMs that opted out of push notifications.
 package notify
 
 import (
@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ashiknesin/exebox/internal/reflection"
+	"github.com/ashiknesin/exe-devbox/internal/reflection"
 )
 
 // DefaultBase is the conventional exe.dev notify endpoint.

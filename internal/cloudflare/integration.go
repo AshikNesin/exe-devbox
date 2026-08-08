@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ashiknesin/exebox/internal/reflection"
+	"github.com/ashiknesin/exe-devbox/internal/reflection"
 )
 
 // urlRE matches the first http(s) URL token (no whitespace) in free text. We

@@ -1,9 +1,12 @@
-// Package cmds holds the cobra command tree for the exebox CLI.
+// Package cmds holds the cobra command tree for the devbox CLI.
 package cmds
 
 import (
-	"github.com/ashiknesin/exebox/internal/config"
-	"github.com/ashiknesin/exebox/internal/output"
+	"os"
+	"path/filepath"
+
+	"github.com/ashiknesin/exe-devbox/internal/config"
+	"github.com/ashiknesin/exe-devbox/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -21,13 +24,13 @@ var gflags globalFlags
 // NewRoot builds the root command and wires subcommands.
 func NewRoot(version string) *cobra.Command {
 	root := &cobra.Command{
-		Use:           "exebox",
-		Short:         "Manage multi-project dev behind nginx + portless on an exe.dev VM",
-		Long: `exebox automates bringing up an exe.dev VM for multi-project dev: it installs
+		Use:   "devbox",
+		Short: "Manage multi-project dev behind nginx + portless on an exe.dev VM",
+		Long: `devbox automates bringing up an exe.dev VM for multi-project dev: it installs
 nginx + portless, wires per-project public subdomains, and tells exe.dev to
 route them here.
 
-See ` + "`exebox <cmd> --help`" + ` and docs/PRD.md.`,
+See ` + "`devbox <cmd> --help`" + ` and docs/PRD.md.`,
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -40,7 +43,7 @@ See ` + "`exebox <cmd> --help`" + ` and docs/PRD.md.`,
 		},
 	}
 
-	root.PersistentFlags().StringVar(&gflags.ConfigDir, "config", "", "exebox config dir (default ~/.exebox)")
+	root.PersistentFlags().StringVar(&gflags.ConfigDir, "config", "", "devbox config dir (default ~/.devbox)")
 	root.PersistentFlags().BoolVar(&gflags.JSON, "json", false, "machine-readable JSON output")
 	root.PersistentFlags().BoolVar(&gflags.Yes, "yes", false, "skip confirmation prompts")
 	root.PersistentFlags().BoolVarP(&gflags.Verbose, "verbose", "v", false, "verbose output")
@@ -63,4 +66,20 @@ func paths() (config.Paths, error) {
 		return config.Paths{}, err
 	}
 	return p, nil
+}
+
+// MaybeInstallAlias ensures the "exe-devbox" symlink points to this binary,
+// so both `devbox` and `exe-devbox` work as commands. Called from main after a
+// successful run. Best-effort: silently skips if the bin dir isn't writable.
+func MaybeInstallAlias() {
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	binDir := filepath.Dir(exe)
+	alias := filepath.Join(binDir, "exe-devbox")
+	if _, err := os.Stat(alias); err == nil {
+		return // already exists
+	}
+	_ = os.Symlink(filepath.Base(exe), alias)
 }
