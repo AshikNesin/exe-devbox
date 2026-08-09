@@ -6,7 +6,7 @@ A CLI that automates bringing up an [exe.dev](https://exe.dev) VM for multi-proj
 
 ![devbox demo](media/devbox-demo.gif)
 
-*(15-second tour of `devbox setup`, `new`, `dev`, and `remove`*
+*15-second tour of `devbox setup`, `new`, `dev`, and `remove`*
 
 ## What it does
 
