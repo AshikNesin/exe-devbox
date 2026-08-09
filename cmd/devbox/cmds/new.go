@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -44,9 +42,9 @@ func newNewCmd() *cobra.Command {
 Usage modes:
   devbox new -d myapp.example.com            explicit domain
   devbox new groot                            derive <project>.<default-domain>
-  devbox new                                  interactive: pick from ~/Code projects
 
-If --domain is omitted, the FQDN is derived as <project>.<default-domain>
+A project name is required (positional arg or --project) unless --domain is
+given. If --domain is omitted, the FQDN is derived as <project>.<default-domain>
 where <default-domain> is set during 'devbox setup --default-domain'.
 Multiple domains: repeat --domain (shares one backend).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -69,7 +67,7 @@ Multiple domains: repeat --domain (shares one backend).`,
 		},
 	}
 	cmd.Flags().StringArrayVarP(&domains, "domain", "d", nil, "public FQDN to serve (repeat for multi-domain; default: <project>.<default-domain>)")
-	cmd.Flags().StringVar(&project, "project", "", "project/route name (default: first label of domain, or picked interactively)")
+	cmd.Flags().StringVar(&project, "project", "", "project/route name (default: first label of domain, or pass positionally)")
 	cmd.Flags().StringVar(&to, "to", "portless", "backend: 'portless' (default) or 'loopback:<port>'")
 	cmd.Flags().BoolVar(&public, "public", false, "also emit share set-public suggest link")
 	cmd.Flags().BoolVar(&wait, "wait", false, "poll DNS until the CNAME resolves to the target")
@@ -84,9 +82,8 @@ type newOpts struct {
 	wait    bool
 }
 
-// resolve fills in missing domain/project via defaults + interactive prompts.
-// At least one of --domain, --project, or args[0] must be provided (or stdin
-// must be a TTY for the interactive picker). Returns resolved opts.
+// resolve fills in missing domain/project via defaults. At least one of
+// --domain, --project, or args[0] must be provided. Returns resolved opts.
 func (o *newOpts) resolve(flagsDomains []string) (newOpts, error) {
 	out := output.Global
 
@@ -127,23 +124,9 @@ func (o *newOpts) resolve(flagsDomains []string) (newOpts, error) {
 		return *o, nil
 	}
 
-	// Case 3: nothing given — interactive project picker (needs a TTY).
-	if out.JSON || !output.IsStdinTerminal() {
-		return *o, fmt.Errorf("--domain or --project required (interactive mode needs a TTY)")
-	}
-	picked, err := pickProjectInteractive()
-	if err != nil {
-		return *o, err
-	}
-	o.project = picked
-
-	cfg, _ := loadConfig()
-	if cfg.DefaultDomain == "" {
-		return *o, fmt.Errorf("no default domain set; run: devbox setup --default-domain <apex>")
-	}
-	o.domains = []string{o.project + "." + cfg.DefaultDomain}
-	out.OK("project: %s  domain: %s", o.project, o.domains[0])
-	return *o, nil
+	// Case 3: nothing given — project name is now required (the interactive
+	// ~/Code picker was removed; users must pass a name explicitly).
+	return *o, fmt.Errorf("a project name is required: pass it as `devbox new <project>` or use --domain/--project")
 }
 
 type newReport struct {
@@ -362,103 +345,6 @@ func loadConfig() (config.File, error) {
 		return config.File{}, err
 	}
 	return p.Load()
-}
-
-// pickProjectInteractive scans ~/Code for directories containing a package.json
-// with a dev script, filters out projects already registered in devbox state,
-// and prompts the user to pick one. Returns the chosen project name.
-func pickProjectInteractive() (string, error) {
-	out := output.Global
-
-	p, err := paths()
-	if err != nil {
-		return "", err
-	}
-	registered := map[string]bool{}
-	domains, _ := p.LoadDomains()
-	for _, d := range domains {
-		registered[d.Project] = true
-	}
-
-	projects, err := discoverCodeProjects()
-	if err != nil {
-		return "", fmt.Errorf("scan ~/Code: %w", err)
-	}
-
-	var available []string
-	for _, name := range projects {
-		if !registered[name] {
-			available = append(available, name)
-		}
-	}
-
-	if len(available) == 0 {
-		if len(projects) == 0 {
-			return "", fmt.Errorf("no projects with package.json found in ~/Code")
-		}
-		return "", fmt.Errorf("all projects in ~/Code are already registered")
-	}
-
-	out.Heading("pick a project")
-	for i, name := range available {
-		out.Line(fmt.Sprintf("  %d. %s", i+1, name))
-	}
-	fmt.Fprint(out.ErrW, "pick [1-"+fmt.Sprint(len(available))+"]: ")
-
-	var input string
-	fmt.Fscanln(os.Stdin, &input)
-
-	for i, name := range available {
-		if input == fmt.Sprint(i+1) || strings.EqualFold(input, name) {
-			return name, nil
-		}
-	}
-	return "", fmt.Errorf("invalid selection: %q", input)
-}
-
-// discoverCodeProjects returns directory names under ~/Code that contain a
-// package.json with a dev script, sorted alphabetically.
-func discoverCodeProjects() ([]string, error) {
-	// Avoid encoding/json import in new.go by checking for the dev script
-	// with a lightweight string match — avoids a heavy dependency for a UX nicety.
-	entries, err := os.ReadDir(filepath.Join(homeDir(), "Code"))
-	if err != nil {
-		return nil, err // ~/Code doesn't exist is fine — caller handles empty
-	}
-	var names []string
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		name := e.Name()
-		if strings.HasPrefix(name, ".") {
-			continue
-		}
-		if hasDevScript(filepath.Join(homeDir(), "Code", name, "package.json")) {
-			names = append(names, name)
-		}
-	}
-	sort.Strings(names)
-	return names, nil
-}
-
-// hasDevScript checks if package.json contains a "dev" script entry.
-// Uses a lightweight string scan to avoid pulling in encoding/json here.
-func hasDevScript(pkgPath string) bool {
-	data, err := os.ReadFile(pkgPath)
-	if err != nil {
-		return false
-	}
-	return strings.Contains(string(data), "\"dev\"")
-}
-
-// homeDir returns the user's home directory or "" on error.
-func homeDir() string {
-	h, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return h
 }
 
 // manualRecordBlock renders the copy-paste manual instructions for non-API providers.

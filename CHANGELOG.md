@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed
+- Interactive project picker for `devbox new`. A project name (positional arg or `--project`) or `--domain` is now required explicitly.
+
 ## [v0.5.8] - 2026-08-08
 
 ### Added
