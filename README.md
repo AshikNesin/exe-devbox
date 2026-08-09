@@ -4,9 +4,9 @@ A CLI that automates bringing up an [exe.dev](https://exe.dev) VM for multi-proj
 
 ## Demo
 
-https://raw.githubusercontent.com/AshikNesin/exe-devbox/main/media/devbox-demo.mp4
+![devbox demo](media/devbox-demo.gif)
 
-*(15-second tour of `devbox setup`, `new`, `dev`, and `remove` — rendered with [Remotion](videos/).)*
+*(15-second tour of `devbox setup`, `new`, `dev`, and `remove` — rendered with [Remotion](videos/). [Full-quality video](media/devbox-demo.mp4).)*
 
 ## What it does
 
